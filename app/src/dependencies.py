@@ -1,0 +1,3 @@
+# Script para funciones auxiliares
+
+
