@@ -51,6 +51,9 @@ async def login(user: OAuth2PasswordRequestForm = Depends()):
     #try:
     user_db = get_user_by_username(username)
     print(user_db)
+    bcrypt_context = bcrypt.using(salt_size=12).from_string(user_db[2])
+
+    if user_db and len(user_db) >= 3 and bcrypt.verify(password, user_db[2]):
     if user_db and len(user_db) >= 3 and bcrypt.verify(password, user_db[2]):
         return {"message": "Inicio de sesión exitoso", "username": user.username}
     else:
