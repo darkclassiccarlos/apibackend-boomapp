@@ -9,6 +9,9 @@ from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 
 from .dependencies import (get_user, get_user_by_username,create_user,oauth2_form_to_user_login,cryptpass)
 
+from .db.database import get_db
+from .db.db_models import users
+
 #from .settings import ()
 
 router = APIRouter()
@@ -17,13 +20,21 @@ router = APIRouter()
 def root():
    return {'msg': "Hola amigos Boom "}
 
-# Obtener un usuario por ID
+# # Obtener un usuario por ID
+# @router.get("/users/{user_id}")
+# def read_user(user_id: int):
+#     user = get_user(user_id)
+#     if user is None:
+#         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+#     return user
+
+#Obtener un usuario por ID
 @router.get("/users/{user_id}")
-def read_user(user_id: int):
-    user = get_user(user_id)
-    if user is None:
+def read_user(user_id: int, db = Depends(get_db)):
+    user_db = db.query(users).filter(users.id == user_id).first()
+    if user_db is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user
+    return user_db
 
 # Ruta para registrar un usuario
 @router.post("/register/")
@@ -53,7 +64,6 @@ async def login(user: OAuth2PasswordRequestForm = Depends()):
     print(user_db)
     bcrypt_context = bcrypt.using(salt_size=12).from_string(user_db[2])
 
-    if user_db and len(user_db) >= 3 and bcrypt.verify(password, user_db[2]):
     if user_db and len(user_db) >= 3 and bcrypt.verify(password, user_db[2]):
         return {"message": "Inicio de sesión exitoso", "username": user.username}
     else:
