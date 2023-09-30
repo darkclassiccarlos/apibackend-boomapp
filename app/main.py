@@ -1,7 +1,5 @@
 from fastapi import FastAPI
-
 from src.routers import router
-
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
 
