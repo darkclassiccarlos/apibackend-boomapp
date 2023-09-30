@@ -1,73 +1,117 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Response, Depends, HTTPException
+from fastapi import APIRouter, Response, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-#from .orm.tables import (users_table)
-#from sqlalchemy.orm import session
-from .models import User,UserLogin
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
-
-from .dependencies import (get_user, get_user_by_username,create_user,oauth2_form_to_user_login,cryptpass)
+from sqlalchemy.ext.declarative import declarative_base
+from .dependencies import (cryptpass,create_jwt_token)
 
 from .db.database import get_db
 from .db.db_models import users
+from .db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase
+from . db import users_actions
+from sqlalchemy.orm import Session
 
 #from .settings import ()
 
 router = APIRouter()
 
+# Loginform class for the login page
+class LoginForm:
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.username: Optional[str] = None
+        self.password: Optional[str] = None
+
+    async def create_oauth_form(self):
+        form = await self.request.form()
+        self.username = form.get('username')
+        self.password = form.get('password')
+
+
 @router.get("/check")
 def root():
    return {'msg': "Hola amigos Boom "}
 
-# # Obtener un usuario por ID
-# @router.get("/users/{user_id}")
-# def read_user(user_id: int):
-#     user = get_user(user_id)
-#     if user is None:
-#         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-#     return user
-
 #Obtener un usuario por ID
 @router.get("/users/{user_id}")
 def read_user(user_id: int, db = Depends(get_db)):
-    user_db = db.query(users).filter(users.id == user_id).first()
-    if user_db is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user_db
+    try:
+        user_db = db.query(users).filter(users.id == user_id).first()
+        if user_db is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return user_db
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error en la base de datos")
 
 # Ruta para registrar un usuario
 @router.post("/register/")
-def register_user(username: str, password: str):
+def register_user(userdb: UserBase, db = Depends(get_db)):
+    print("Trying user creation")
     # Verifica si el usuario ya existe
-    user = get_user_by_username(username)
-    if user:
+    print(userdb)
+    passwhordhash = cryptpass(userdb.password)
+    db_user = users(user=userdb.user, picture=userdb.picture ,password=passwhordhash, email =userdb.email, rol_id = userdb.rol_id)
+    print(db_user)
+    user_db = db.query(users).filter(users.user == userdb.user).first()
+    if user_db:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
     # Crea el nuevo usuario
-    user = User(user=username, password=password)
-    print(user)
-    #crud.create_user(db, user)
-    create_user(user)
+    db.add(db_user)
+    db.commit()  # Confirma la transacción
+    db.refresh(db_user)  
     return {"message": "Usuario registrado correctamente"}
 
+# @router.post('/update_user/{id}')
+# async def update_user(request: Request, response:Response, id:int, db: Session = Depends(get_db)):
+#     print("Editing user page")
+#     user, body = get_current_user(request=request, db=db)
+#     if user is None:
+#         raise HTTPException(status_code=404, detail="Usuario no valido")
+#     if user.rol_id != 1:
+#         body["msg"] = "Unauthorized user getting back to home page"
+#         return templates.TemplateResponse("home.html", body)
+#     edit_user = db.query(Users).filter(Users.id == id).first()
+#     formdata = await request.form()
+#     edit_user.name = formdata['name'].lower()
+#     edit_user.last_name = formdata['last_name'].lower()
+#     edit_user.email = formdata['email'].lower()
+#     edit_user.password = edit_user.password if formdata['password'] =="" or formdata['password'] is None else  users_actions.Hash.bcrypt(formdata['password'])
+#     edit_user.rol_id = formdata['rol']
+#     updated_user = users_actions.update_user(db=db, user=user)
+    
+#     return RedirectResponse(url="/users/users", status_code=status.HTTP_302_FOUND)
 
 # Ruta de inicio de sesión (Log In):
 @router.post("/login")
-async def login(user: OAuth2PasswordRequestForm = Depends()):
-    user = oauth2_form_to_user_login(user)
-    username = user.username
-    password = cryptpass(user.password)
-    print(user)
-    print(password)
-    #try:
-    user_db = get_user_by_username(username)
-    print(user_db)
-    bcrypt_context = bcrypt.using(salt_size=12).from_string(user_db[2])
+async def login(request: Request,
+                response: Response,
+                form_data: OAuth2PasswordRequestForm = Depends(),
+                db: Session = Depends(get_db)):
+    try:
+        form = LoginForm(request)
+        await form.create_oauth_form()
+        #response = RedirectResponse(url='/home', status_code=status.HTTP_302_FOUND)
+        user = users_actions.authenticate_user(db=db,
+                                            user=form_data.username,
+                                            password=form_data.password)
+        if user:
+            #response.set_cookie(key="user",value=user.id, httponly=True)
+            #USERNAME = user.user
+            #return response
+            user=user.as_dict()
+            user = {
+                "name": user["user"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                "picture": f"assets/images/{user['picture']}.png",
+                "email": user["email"]
+            }
+            token = create_jwt_token(user)
+            return {"access_token": token, "token_type": "bearer"}
 
-    if user_db and len(user_db) >= 3 and bcrypt.verify(password, user_db[2]):
-        return {"message": "Inicio de sesión exitoso", "username": user.username}
-    else:
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-
-    #except Exception as e:
-    #    raise HTTPException(status_code=500, detail="Error en la base de datos")
+        else: 
+            #raise HTTPException(status_code=404, detail="Incorrect Username or Password")
+            #return templates.TemplateResponse('login.html', {"request":request, "session":False, "msg":"Incorrect Username or Password", "rol":4})
+            return "Incorrect Username or Password"
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Unkwon error")
