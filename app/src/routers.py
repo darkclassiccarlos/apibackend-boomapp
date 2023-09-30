@@ -2,12 +2,9 @@
 from fastapi import APIRouter, Response, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-#from .orm.tables import (users_table)
-#from sqlalchemy.orm import session
-#from .models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
-from .dependencies import (cryptpass)
+from .dependencies import (cryptpass,create_jwt_token)
 
 from .db.database import get_db
 from .db.db_models import users
@@ -95,17 +92,22 @@ async def login(request: Request,
         form = LoginForm(request)
         await form.create_oauth_form()
         #response = RedirectResponse(url='/home', status_code=status.HTTP_302_FOUND)
-        print(form_data.username)
-        print(form_data.password)
         user = users_actions.authenticate_user(db=db,
                                             user=form_data.username,
                                             password=form_data.password)
-        print(user)
         if user:
             #response.set_cookie(key="user",value=user.id, httponly=True)
             #USERNAME = user.user
             #return response
-            return 'Usuario loggin'
+            user=user.as_dict()
+            user = {
+                "name": user["user"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                "picture": f"assets/images/{user['picture']}.png",
+                "email": user["email"]
+            }
+            token = create_jwt_token(user)
+            return {"access_token": token, "token_type": "bearer"}
+
         else: 
             #raise HTTPException(status_code=404, detail="Incorrect Username or Password")
             #return templates.TemplateResponse('login.html', {"request":request, "session":False, "msg":"Incorrect Username or Password", "rol":4})

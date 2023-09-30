@@ -13,6 +13,9 @@ class users(Base):
     password = Column(String(255),nullable=True)
     email = Column(String(100), nullable=False)
     rol_id = Column(Integer, nullable=False, default=2)
+    def as_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
+
 
 class rol_user(Base):
     __tablename__ = 'rol_user'
