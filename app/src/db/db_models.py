@@ -8,8 +8,8 @@ class users(Base):
     __tablename__ = 'users'
 
     id = Column(Integer,primary_key=True, unique=True, index = True)
-    user = Column(String(255),nullable=False)
-    picture = Column(String(255),nullable =False,default=None)
+    name = Column(String(255),nullable=False)
+    picture = Column(String(255),nullable =True,default=None)
     password = Column(String(255),nullable=True)
     email = Column(String(100), nullable=False)
     rol_id = Column(Integer, nullable=False, default=2)
@@ -17,8 +17,8 @@ class users(Base):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
 
-class rol_user(Base):
-    __tablename__ = 'rol_user'
+class roluser(Base):
+    __tablename__ = 'roluser'
 
     id = Column(Integer,primary_key=True, unique=True, index = True)
     name =  Column(String(100),nullable=False)

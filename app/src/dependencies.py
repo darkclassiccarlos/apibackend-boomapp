@@ -1,5 +1,7 @@
 # Script para funciones auxiliares
 # user_functions.py
+from fastapi import Request
+from sqlalchemy.orm import Session
 
 from typing import Dict, Optional
 import mysql.connector
@@ -9,6 +11,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .db.database import get_db
 import jwt
 from datetime import datetime, timedelta
+from .db.db_models import users, roluser
+
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -41,3 +45,32 @@ def create_jwt_token(data):
         **data
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+
+def get_current_user(request: Request, db:Session):
+    body = {"request":request, 
+            "session":False, 
+            "rol":4, 
+            "msg":None,
+            "USERNAME": None }
+    print(body)
+    try:
+        user_id = request.cookies.get("user")
+        print("Find user cookie = ",user_id)
+        
+        if user_id is None:
+            print("User cookie not found")
+            
+            return None, body
+        
+        user = db.query(users).filter(users.id == user_id).first()
+        if user is None:
+            print("User not found on db")
+            return None, body
+        print(f"User {user.name} found on db")
+        body["rol"] = user.rol_id
+        body["session"] = True
+        body["USERNAME"] = user.name
+        return user, body
+    except:
+        return None, body

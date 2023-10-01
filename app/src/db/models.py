@@ -1,14 +1,15 @@
 from typing import Optional, Dict, List
 from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Body
 
 # #Base = declarative_base()
 # #class User(Base):
 class UserBase(BaseModel):
-    user : str
+    fullName : str
     password : str
     email : str
     picture: Optional[str]
-    rol_id: Optional[int]
+    rol_id: int 
 
 class RolBase(BaseModel):
     name : str
@@ -27,3 +28,7 @@ class ProductsBase(BaseModel):
     name : str
     namefile : str
     price : float
+
+class CustomOAuth2PasswordRequestForm(BaseModel):
+    email: str
+    password: str
