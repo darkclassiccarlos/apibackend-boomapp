@@ -3,7 +3,7 @@ from passlib.context import CryptContext
 
 from .database import SessionLocal
 from .db_models import users, roluser
-from .models import UserBase
+from .models import UserBase, UserBaseUpdate
 
 pwd_cxt = CryptContext(schemes='bcrypt')
 
@@ -50,3 +50,10 @@ def create_user(db: Session, user: UserBase) -> users | str:
             return str(e)
 
         return new_user
+
+def update_user(db: Session, user : UserBaseUpdate) -> users | None:
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return user

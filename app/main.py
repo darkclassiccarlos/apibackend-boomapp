@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from src.routers import router
+from src.routes import users,auth
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
+
 
 middleware = [
     Middleware(
@@ -23,7 +24,9 @@ app = FastAPI(
     middleware=middleware
 )
 
-app.include_router(router)
+app.include_router(users.router)
+app.include_router(auth.router)
+
 
 if __name__ == '__main__':
     import uvicorn

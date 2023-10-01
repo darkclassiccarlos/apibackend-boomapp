@@ -11,6 +11,11 @@ class UserBase(BaseModel):
     picture: Optional[str]
     rol_id: int 
 
+class UserBaseUpdate(BaseModel):
+    fullName : str
+    email : str
+    rol_id: int 
+
 class RolBase(BaseModel):
     name : str
 
