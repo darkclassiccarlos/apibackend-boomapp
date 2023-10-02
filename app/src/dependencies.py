@@ -50,7 +50,11 @@ def create_jwt_token(data):
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def decode_jwt_token(data):
-    return jwt.decode(data, SECRET_KEY, algorithms=["HS256"])
+    try:
+        return jwt.decode(data, SECRET_KEY, algorithms=["HS256"])
+    except Exception as e:
+        print(e)
+        return None
 
 def get_current_user(request: Request, db:Session):
     body = {"request":request, 

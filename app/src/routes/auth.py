@@ -95,16 +95,25 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
 
 @router.post("/send_email_recovery_password")
 def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
+    user_email = db.query(users).filter(users.email == form_data.destinatario).first()
+    if user_email is None:
+        raise HTTPException(status_code=400, detail="El usuario ya existe")    
     now = datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    data = {"user_id": form_data.user_id,
+    data = {"user_id": user_email.id,
             "date": formatted_date_time
             }
     token_recovery_password = create_jwt_token(data)
-    print(token_recovery_password)
-    db_rquest_recovery = passwordRecoveryRequest(users_id=form_data.user_id, token=token_recovery_password, date_request =now)
-    rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.users_id == form_data.user_id).first()
+    db_rquest_recovery = passwordRecoveryRequest(users_id=user_email.id, token=token_recovery_password, date_request =now)
+    rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.users_id == user_email.id).first()
+    print(rquest_recovery)
     if rquest_recovery:
+        delta_request = now - rquest_recovery.date_request
+        print(delta_request)
+    else:
+        delta_request = now
+        print(delta_request)
+    if rquest_recovery and delta_request <= timedelta(minutes=5):
         raise HTTPException(status_code=400, detail="Ya hay una petición en curso")
     try:
         db.add(db_rquest_recovery)
@@ -112,22 +121,26 @@ def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
         db.refresh(db_rquest_recovery)
         #return {"request success"}
         #url = "https://boom-backend-test.onrender.com/auth/recover_password/?token="+f"{token_recovery_password}"
-        url = "http://localhost:8080/auth/recover_password/?token="+f"{token_recovery_password}"
+        url = "https://boomtel.com.co/auth/recover_password/?token="+f"{token_recovery_password}"
         # Crea el nuevo usuario
-        response = enviar_correo(form_data.destinatario, form_data.asunto, url)
+        response = enviar_correo(form_data.destinatario, "Recovery Passtword", url)
         return response
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Unkwon error")
     
 
-@router.post("/recover_password")
+@router.post("/recovery_password")
 async def recover_password(token: str = Header(None), db = Depends(get_db)):
     #try:
     payload = decode_jwt_token(token)
     #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
     print(payload)
-    expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
+    if payload:
+        expiration_time = datetime.now()
+    else:
+        expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
+
     if datetime.utcnow() > expiration_time:
         raise HTTPException(status_code=400, detail="El token ha expirado")
     else:

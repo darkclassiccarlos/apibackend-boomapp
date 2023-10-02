@@ -39,9 +39,7 @@ class CustomOAuth2PasswordRequestForm(BaseModel):
     password: str
 
 class emailRequest(BaseModel):
-    user_id: int
     destinatario: str
-    asunto: str
 
 class recoveryPassword(BaseModel):
     token: str
