@@ -1,12 +1,17 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from dotenv import load_dotenv
+import os
 
+# # Especifica la ubicación del archivo .env
+dotenv_path = os.path.join(os.path.dirname(__file__), "../../config/prod.env")
+load_dotenv(dotenv_path)
 
-HOST = '212.1.211.45'
-DATABASE = 'u921098192_db_app_boom'
-USERNAME = 'u921098192_dbuser'
-PASSWORD = '2021Boom*'
+HOST = os.getenv("HOSTTINGER_HOST")
+USERNAME = os.getenv("HOSTTINGER_USER")
+PASSWORD = os.getenv("HOSTTINGER_PWD")
+DATABASE = os.getenv("HOSTTINGER_DB")
 
 #Mysql arguments
 SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:3306/{DATABASE}"

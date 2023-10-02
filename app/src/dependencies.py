@@ -13,7 +13,11 @@ import jwt
 from datetime import datetime, timedelta
 from .db.db_models import users, roluser
 
-
+# smtp librarys
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -21,14 +25,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Clave secreta para firmar el token (deberías guardarse esto de manera segura per ya vemos)
 SECRET_KEY = "tu_clave_secreta"
 # Tiempo de expiración del token (en segundos)
-TOKEN_EXPIRATION = timedelta(minutes=30)
+TOKEN_EXPIRATION = timedelta(minutes=5)
 
 class User:
     def __init__(self, id: int, username: str, password: str):
         self.id = id
         self.username = username
         self.password = password
-
 # Agrega cualquier otra lógica relacionada con usuarios aquí
 
 def cryptpass(password: str):
@@ -46,6 +49,8 @@ def create_jwt_token(data):
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
+def decode_jwt_token(data):
+    return jwt.decode(data, SECRET_KEY, algorithms=["HS256"])
 
 def get_current_user(request: Request, db:Session):
     body = {"request":request, 
@@ -74,3 +79,33 @@ def get_current_user(request: Request, db:Session):
         return user, body
     except:
         return None, body
+
+def enviar_correo(destinatario, asunto, mensaje):
+    # Configura tus credenciales de Gmail
+    remitente = 'contacto@boomtel.com.co'  # Tu dirección de smtp
+    contraseña = 'Contacto123*'     # Tu contraseña de smtp
+
+    # Crea un objeto SMTP y establece la conexión con el servidor 
+    servidor_smtp = smtplib.SMTP('smtp.hostinger.com', 587)
+    servidor_smtp.starttls()
+    servidor_smtp.login(remitente, contraseña)
+
+    # Crea un mensaje de correo
+    mensaje_correo = MIMEMultipart()
+    mensaje_correo['From'] = remitente
+    mensaje_correo['To'] = destinatario
+    mensaje_correo['Subject'] = asunto
+
+    # Agrega el mensaje de texto al correo
+    mensaje_correo.attach(MIMEText(mensaje, 'plain'))
+    # Si hay un archivo adjunto, agrégalo al correo
+    # if adjunto:
+    #     with open(adjunto, "rb") as archivo_adjunto:
+    #         adjunto_mime = MIMEApplication(archivo_adjunto.read(), _subtype="pdf")
+    #     adjunto_mime.add_header('Content-Disposition', 'attachment', filename=adjunto)
+    #     mensaje_correo.attach(adjunto_mime)
+    # Envía el correo electrónico
+    servidor_smtp.sendmail(remitente, destinatario, mensaje_correo.as_string())
+
+    # Cierra la conexión con el servidor SMTP
+    servidor_smtp.quit()

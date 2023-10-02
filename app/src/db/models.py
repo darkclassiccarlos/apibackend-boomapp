@@ -37,3 +37,15 @@ class ProductsBase(BaseModel):
 class CustomOAuth2PasswordRequestForm(BaseModel):
     email: str
     password: str
+
+class emailRequest(BaseModel):
+    user_id: int
+    destinatario: str
+    asunto: str
+
+class recoveryPassword(BaseModel):
+    token: str
+
+class PasswordRecovery(BaseModel):
+    users_id: str
+    new_password: str

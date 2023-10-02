@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Response, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Response, Depends, HTTPException, Request, status,Header
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
+from datetime import datetime,timedelta
 
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user)
+from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
 from ..db.database import get_db
-from ..db.db_models import users, roluser
-from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm
+from ..db.db_models import users, roluser, passwordRecoveryRequest
+from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword
 from ..db import users_actions
 
 
@@ -72,11 +73,72 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
     passwhordhash = cryptpass(userdb.password)
     db_user = users(name=userdb.fullName, password=passwhordhash, email =userdb.email, rol_id = userdb.rol_id)
     print(db_user)
-    user_db = db.query(users).filter(users.name == userdb.fullName).first()
+    user_db = db.query(users).filter(users.email == userdb.email).first()
     if user_db:
         raise HTTPException(status_code=400, detail="El usuario ya existe")
     # Crea el nuevo usuario
-    db.add(db_user)
-    db.commit()  # Confirma la transacción
-    db.refresh(db_user)  
-    return {"message": "Usuario registrado correctamente"}
+    try:
+        db.add(db_user)
+        db.commit()  # Confirma la transacción
+        db.refresh(db_user)
+        response = db_user.as_dict()
+        response = {
+                "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                "message": f"User Registrado {userdb.fullName}",
+                "result": userdb.fullName
+            }
+        token = create_jwt_token(response)
+        return {"access_token": token, "token_type": "bearer"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Unkwon error")
+
+@router.post("/send_email_recovery_password")
+def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
+    now = datetime.now()
+    formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    data = {"user_id": form_data.user_id,
+            "date": formatted_date_time
+            }
+    token_recovery_password = create_jwt_token(data)
+    print(token_recovery_password)
+    db_rquest_recovery = passwordRecoveryRequest(users_id=form_data.user_id, token=token_recovery_password, date_request =now)
+    rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.users_id == form_data.user_id).first()
+    if rquest_recovery:
+        raise HTTPException(status_code=400, detail="Ya hay una petición en curso")
+    try:
+        db.add(db_rquest_recovery)
+        db.commit()  # Confirma la transacción
+        db.refresh(db_rquest_recovery)
+        #return {"request success"}
+        #url = "https://boom-backend-test.onrender.com/auth/recover_password/?token="+f"{token_recovery_password}"
+        url = "http://localhost:8080/auth/recover_password/?token="+f"{token_recovery_password}"
+        # Crea el nuevo usuario
+        response = enviar_correo(form_data.destinatario, form_data.asunto, url)
+        return response
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Unkwon error")
+    
+
+@router.post("/recover_password")
+async def recover_password(token: str = Header(None), db = Depends(get_db)):
+    #try:
+    payload = decode_jwt_token(token)
+    #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
+    print(payload)
+    expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
+    if datetime.utcnow() > expiration_time:
+        raise HTTPException(status_code=400, detail="El token ha expirado")
+    else:
+        rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
+        response = {
+            "success": True,
+            "message": "Usuario validado"
+        }
+        return response
+    
+    # except jwt.ExpiredSignatureError:
+    #     raise HTTPException(status_code=400, detail="El token ha expirado")
+    # except jwt.DecodeError:
+    #     raise HTTPException(status_code=400, detail="Token inválido")

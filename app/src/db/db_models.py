@@ -1,7 +1,8 @@
 from .database      import Base, engine
-from sqlalchemy     import Column, Integer, String, ForeignKey, BIGINT, Boolean, Float
+from sqlalchemy     import Column, Integer, String, ForeignKey, BIGINT, Boolean, Float, DateTime
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class users(Base):
@@ -45,6 +46,14 @@ class products(Base):
     name =  Column(String(255),nullable=False)
     namefile =  Column(String(255),nullable=False)
     price = Column(Float(precision=2), nullable=False)
+
+class passwordRecoveryRequest(Base):
+    __tablename__ = 'passwordRecoveryRequest'
+
+    id = Column(Integer, primary_key=True, index=True)
+    users_id = Column(Integer)
+    token = Column(String(255),nullable = False)
+    date_request =  Column(DateTime, default=datetime.utcnow)
 
 
 
