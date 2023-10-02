@@ -132,26 +132,25 @@ def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
 
 @router.post("/recovery_password")
 async def recover_password(token: str = Header(None), db = Depends(get_db)):
-    #try:
-    payload = decode_jwt_token(token)
-    #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    print(payload)
-    if payload:
-        expiration_time = datetime.now()
-    else:
-        expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
+    try:
+        payload = decode_jwt_token(token)
+        #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload)
+        if payload:
+            expiration_time = datetime.now()
+        else:
+            expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
 
-    if datetime.utcnow() > expiration_time:
+        if datetime.utcnow() > expiration_time:
+            raise HTTPException(status_code=400, detail="El token ha expirado")
+        else:
+            rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
+            response = {
+                "success": True,
+                "message": "Usuario validado"
+            }
+            return response
+    except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="El token ha expirado")
-    else:
-        rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
-        response = {
-            "success": True,
-            "message": "Usuario validado"
-        }
-        return response
-    
-    # except jwt.ExpiredSignatureError:
-    #     raise HTTPException(status_code=400, detail="El token ha expirado")
-    # except jwt.DecodeError:
-    #     raise HTTPException(status_code=400, detail="Token inválido")
+    except jwt.DecodeError:
+        raise HTTPException(status_code=400, detail="Token inválido")
