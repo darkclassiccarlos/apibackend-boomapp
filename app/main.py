@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from src.routers import router
+from src.routes import users,auth,admin
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
+
 
 middleware = [
     Middleware(
@@ -15,15 +16,17 @@ middleware = [
 
 
 app = FastAPI(
-    title="API semilla",
-    description="Esta API es una semilla para crear APIs con FastAPI",
+    title="API Boom WS admin",
+    description="Esta API de administración del WS de Boom APIs con FastAPI",
     version = "1.0",
     openapi_url="/openapi.json", 
     docs_url="/docs",
     middleware=middleware
 )
 
-app.include_router(router)
+app.include_router(users.router)
+app.include_router(auth.router)
+app.include_router(admin.router)
 
 if __name__ == '__main__':
     import uvicorn
