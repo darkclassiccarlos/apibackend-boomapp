@@ -7,12 +7,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from datetime import datetime,timedelta
 import jwt
+from sqlalchemy import select, join
 
 #local imports
 from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts
-from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate
+from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate
 from ..db import users_actions
 
 
@@ -28,26 +29,21 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
         family = FamilysBase
         product = ProductsBase
         family_product = FamilyproductsBase
-        print(user)
-        print(family)
-        print(product)
-        print(family_product)
-        
         # Consulta SQL para obtener el catálogo del usuario
         stmt = (
             select(
-                user.email,
-                family.name.label('family'),
-                product.name.label('name'),
-                product.namefile,
-                product.price
+                users.email,
+                familys.name.label('family'),
+                products.name.label('name'),
+                products.namefile,
+                products.price
             )
             .select_from(
-                join(family_product, family, family.id == family_product.family_id)
-                .join(product, family_product.producto_id == product.id)
-                .join(user, family.user_id == user.id)
+                join(familyproducts, familys, familys.id == familyproducts.family_id)
+                .join(products, familyproducts.product_id == products.id)
+                .join(users, familys.user_id == users.id)
             )
-            .where(user.email == email)
+            .where(users.email == email)
         )
 
         result = db.execute(stmt)
@@ -84,7 +80,15 @@ def create_family(family: FamilyCreateBase, db = Depends(get_db)):
     db.add(db_family)
     db.commit()
     db.refresh(db_family)
-    return db_family
+    family = db.query(familys).filter(familys.name == family.user_id).first()
+    response = db_family.as_dict()
+    response = {
+                "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                "message": f"familia creada {family.name}",
+                "family_id": family.id
+            }
+        #token = create_jwt_token(response)
+    return response
 
 # Endpoint para crear un producto
 @router.post("/products/")

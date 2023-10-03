@@ -16,8 +16,8 @@ middleware = [
 
 
 app = FastAPI(
-    title="API semilla",
-    description="Esta API es una semilla para crear APIs con FastAPI",
+    title="API Boom WS admin",
+    description="Esta API de administración del WS de Boom APIs con FastAPI",
     version = "1.0",
     openapi_url="/openapi.json", 
     docs_url="/docs",
