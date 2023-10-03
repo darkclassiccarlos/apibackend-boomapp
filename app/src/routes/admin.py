@@ -24,50 +24,50 @@ router = APIRouter(
 
 @router.get("/user_catalog/")
 async def get_user_catalog(email: str, db = Depends(get_db)):
-    # try:
-    user = UserBaseCatalog
-    family = FamilysBase
-    product = ProductsBase
-    family_product = FamilyproductsBase
-    # Consulta SQL para obtener el catálogo del usuario
-    stmt = (
-        select(
-            users.email,
-            familys.name.label('family'),
-            familys.id,
-            products.id,
-            products.name.label('name'),
-            products.namefile,
-            products.price
+    try:
+        user = UserBaseCatalog
+        family = FamilysBase
+        product = ProductsBase
+        family_product = FamilyproductsBase
+        # Consulta SQL para obtener el catálogo del usuario
+        stmt = (
+            select(
+                users.email,
+                familys.name.label('family'),
+                familys.id,
+                products.id,
+                products.name.label('name'),
+                products.namefile,
+                products.price
+            )
+            .select_from(
+                join(familyproducts, familys, familys.id == familyproducts.family_id)
+                .join(products, familyproducts.product_id == products.id)
+                .join(users, familys.user_id == users.id)
+            )
+            .where(users.email == email)
         )
-        .select_from(
-            join(familyproducts, familys, familys.id == familyproducts.family_id)
-            .join(products, familyproducts.product_id == products.id)
-            .join(users, familys.user_id == users.id)
-        )
-        .where(users.email == email)
-    )
-    result = db.execute(stmt)
-    # Organizar los resultados en la estructura JSON requerida
-    catalog = {}
-    for row in result:
-        family_name = row[1],
-        product_data = {
-            "product_id": row[3],
-            "name": row[4],
-            "image": row[5],
-            "price": row[6]
-        }
-        if family_name not in catalog:
-            catalog[family_name] = {"family": row[1],"family_id": row[2], "products": []}
+        result = db.execute(stmt)
+        # Organizar los resultados en la estructura JSON requerida
+        catalog = {}
+        for row in result:
+            family_name = row[1],
+            product_data = {
+                "product_id": row[3],
+                "name": row[4],
+                "image": row[5],
+                "price": row[6]
+            }
+            if family_name not in catalog:
+                catalog[family_name] = {"family": row[1],"family_id": row[2], "products": []}
 
-        catalog[family_name]["products"].append(product_data)
+            catalog[family_name]["products"].append(product_data)
 
-    user_data = {"user": email, "catalog": list(catalog.values())}
+        user_data = {"user": email, "catalog": list(catalog.values())}
 
-    return user_data
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        return user_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Endpoint para crear una familia de productos
 @router.post("/families/")
@@ -87,7 +87,6 @@ def create_family(family: FamilyCreateBase, db = Depends(get_db)):
                     "message": "familia creada",
                     "family_id": db_family.id
                 }
-            #token = create_jwt_token(response)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
@@ -112,7 +111,6 @@ def create_product(product: ProductCreate, db = Depends(get_db)):
                         "message": "producto creado",
                         "family_id": db_product.id
                     }
-                #token = create_jwt_token(response)
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
