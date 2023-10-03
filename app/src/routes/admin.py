@@ -59,7 +59,7 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
             "price": row[6]
         }
         if family_name not in catalog:
-            catalog[family_name] = {"family": family_name,"family_id": row[2], "products": []}
+            catalog[family_name] = {"family": row[1],"family_id": row[2], "products": []}
 
         catalog[family_name]["products"].append(product_data)
 
