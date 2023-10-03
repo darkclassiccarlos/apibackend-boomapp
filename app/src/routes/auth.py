@@ -49,7 +49,8 @@ async def login(request: Request,
             user = {
                 "name": user["name"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                 "picture": f"assets/images/{user['picture']}.png",
-                "email": user["email"]
+                "email": user["email"],
+                "user_id": user.id
             }
             token = create_jwt_token(user)
             return {"access_token": token, "token_type": "bearer"}

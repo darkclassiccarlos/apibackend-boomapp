@@ -24,50 +24,50 @@ router = APIRouter(
 
 @router.get("/user_catalog/")
 async def get_user_catalog(email: str, db = Depends(get_db)):
-    try:
-        user = UserBaseCatalog
-        family = FamilysBase
-        product = ProductsBase
-        family_product = FamilyproductsBase
-        # Consulta SQL para obtener el catálogo del usuario
-        stmt = (
-            select(
-                users.email,
-                familys.name.label('family'),
-                products.name.label('name'),
-                products.namefile,
-                products.price
-            )
-            .select_from(
-                join(familyproducts, familys, familys.id == familyproducts.family_id)
-                .join(products, familyproducts.product_id == products.id)
-                .join(users, familys.user_id == users.id)
-            )
-            .where(users.email == email)
+    # try:
+    user = UserBaseCatalog
+    family = FamilysBase
+    product = ProductsBase
+    family_product = FamilyproductsBase
+    # Consulta SQL para obtener el catálogo del usuario
+    stmt = (
+        select(
+            users.email,
+            familys.name.label('family'),
+            familys.id,
+            products.id,
+            products.name.label('name'),
+            products.namefile,
+            products.price
         )
+        .select_from(
+            join(familyproducts, familys, familys.id == familyproducts.family_id)
+            .join(products, familyproducts.product_id == products.id)
+            .join(users, familys.user_id == users.id)
+        )
+        .where(users.email == email)
+    )
+    result = db.execute(stmt)
+    # Organizar los resultados en la estructura JSON requerida
+    catalog = {}
+    for row in result:
+        family_name = row[1],
+        product_data = {
+            "product_id": row[3],
+            "name": row[4],
+            "image": row[5],
+            "price": row[6]
+        }
+        if family_name not in catalog:
+            catalog[family_name] = {"family": family_name,"family_id": row[2], "products": []}
 
-        result = db.execute(stmt)
-        print(result)
-        # Organizar los resultados en la estructura JSON requerida
-        catalog = {}
-        for row in result:
-            family_name = row[1]
-            product_data = {
-                "name": row[2],
-                "image": row[3],
-                "price": row[4]
-            }
+        catalog[family_name]["products"].append(product_data)
 
-            if family_name not in catalog:
-                catalog[family_name] = {"family": family_name, "products": []}
+    user_data = {"user": email, "catalog": list(catalog.values())}
 
-            catalog[family_name]["products"].append(product_data)
-
-        user_data = {"user": email, "catalog": list(catalog.values())}
-
-        return user_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    return user_data
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Endpoint para crear una familia de productos
 @router.post("/families/")
