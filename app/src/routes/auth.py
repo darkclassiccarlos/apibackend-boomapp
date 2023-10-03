@@ -123,7 +123,7 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         db.refresh(db_rquest_recovery)
         #return {"request success"}
         #url = "https://boom-backend-test.onrender.com/auth/recover_password/?token="+f"{token_recovery_password}"
-        url = "https://boomtel.com.co/auth/recover_password/?token="+f"{token_recovery_password}"
+        url = "https://wsa-dev.boomtel.com.co/auth/reset-password?token="+f"{token_recovery_password}"
         # Crea el nuevo usuario
         response = enviar_correo(form_data.destinatario, "Recovery Passtword", url)
         return response
