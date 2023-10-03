@@ -72,37 +72,47 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
 # Endpoint para crear una familia de productos
 @router.post("/families/")
 def create_family(family: FamilyCreateBase, db = Depends(get_db)):
-    user = db.query(users).filter(users.id == family.user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    print(family)
-    db_family = familys(**family.dict())
-    db.add(db_family)
-    db.commit()
-    db.refresh(db_family)
-    family = db.query(familys).filter(familys.name == family.user_id).first()
-    response = db_family.as_dict()
-    response = {
-                "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
-                "message": f"familia creada {family.name}",
-                "family_id": family.id
-            }
-        #token = create_jwt_token(response)
-    return response
-
+    try:
+        user = db.query(users).filter(users.id == family.user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        db_family = familys(**family.dict())
+        db.add(db_family)
+        db.commit()
+        db.refresh(db_family)
+        #family = db.query(familys).filter(familys.name == family.name, familys.user_id == family.user_id).first()
+        #response = db_family.as_dict()
+        response = {
+                    "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                    "message": "familia creada",
+                    "family_id": db_family.id
+                }
+            #token = create_jwt_token(response)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
 # Endpoint para crear un producto
 @router.post("/products/")
 def create_product(product: ProductCreate, db = Depends(get_db)):
-    # Crear el producto
-    db_product = products(**product.dict(exclude={"family_ids"}))
-    db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
+    try:
+        # Crear el producto
+        db_product = products(**product.dict(exclude={"family_ids"}))
+        db.add(db_product)
+        db.commit()
+        db.refresh(db_product)
 
-    # Asociar el producto con las familias
-    for family_id in product.family_ids:
-        family_product = familyproducts(family_id=family_id, product_id=db_product.id)
-        db.add(family_product)
-    db.commit()
-
-    return db_product
+        # Asociar el producto con las familias
+        for family_id in product.family_ids:
+            family_product = familyproducts(family_id=family_id, product_id=db_product.id)
+            db.add(family_product)
+        db.commit()
+        response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "producto creado",
+                        "family_id": db_product.id
+                    }
+                #token = create_jwt_token(response)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
