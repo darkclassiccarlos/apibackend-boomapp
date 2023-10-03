@@ -17,7 +17,6 @@ class users(Base):
     def as_dict(self):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
-
 class roluser(Base):
     __tablename__ = 'roluser'
 
@@ -28,8 +27,13 @@ class familyproducts(Base):
     __tablename__ = 'familyproducts'
 
     id = Column(Integer,primary_key=True, unique=True, index = True)
-    family_id =  Column(Integer,nullable=False)
-    producto_id =  Column(Integer,nullable=False)
+    family_id = Column(Integer, ForeignKey('familys.id'))
+    product_id = Column(Integer, ForeignKey('products.id'))
+    # Define la relación con Product
+    # Relaciones con 'Family' y 'Product'
+    family = relationship('familys', back_populates='family_products')
+    product = relationship('products', back_populates='family_products')
+
 
 class familys(Base):
     __tablename__ = 'familys'
@@ -37,7 +41,9 @@ class familys(Base):
     id = Column(Integer,primary_key=True, unique=True, index = True)
     isactive =  Column(Boolean, default=True)
     name =  Column(String(255),nullable=False)
-    user_id = Column(Integer,nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    
+    family_products = relationship('familyproducts', back_populates='family')
 
 class products(Base):
     __tablename__ = 'products'
@@ -46,6 +52,10 @@ class products(Base):
     name =  Column(String(255),nullable=False)
     namefile =  Column(String(255),nullable=False)
     price = Column(Float(precision=2), nullable=False)
+
+    family_products = relationship('familyproducts', back_populates='product')
+
+
 
 class passwordRecoveryRequest(Base):
     __tablename__ = 'passwordRecoveryRequest'

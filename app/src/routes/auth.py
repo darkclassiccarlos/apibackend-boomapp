@@ -6,6 +6,7 @@ from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from datetime import datetime,timedelta
+import jwt
 
 #local imports
 from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
@@ -93,8 +94,8 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
         print(e)
         raise HTTPException(status_code=500, detail="Unkwon error")
 
-@router.post("/send_email_recovery_password")
-def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
+@router.post("/forgot_pass")
+def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
     user_email = db.query(users).filter(users.email == form_data.destinatario).first()
     if user_email is None:
         raise HTTPException(status_code=400, detail="El usuario ya existe")    
@@ -130,8 +131,8 @@ def sendEmail(form_data: emailRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Unkwon error")
     
 
-@router.post("/recovery_password")
-async def recover_password(token: str = Header(None), db = Depends(get_db)):
+@router.post("/validate_recovery_password")
+async def validate_recovery_password(token: str = Header(None), db = Depends(get_db)):
     try:
         payload = decode_jwt_token(token)
         #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
