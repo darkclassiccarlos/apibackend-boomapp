@@ -55,7 +55,7 @@ class CustomOAuth2PasswordRequestForm(BaseModel):
     password: str
 
 class emailRequest(BaseModel):
-    destinatario: str
+    email: str
 
 class recoveryPassword(BaseModel):
     token: str
@@ -63,3 +63,22 @@ class recoveryPassword(BaseModel):
 class PasswordRecovery(BaseModel):
     users_id: str
     new_password: str
+
+class Business(BaseModel):
+    name : str
+    adress : str
+    telephone : str
+    email : str
+    description : str
+    category : str
+    category : str
+    picture : str
+    users_id : int
+
+class DesignsConfigurations(BaseModel):
+    business_id : int
+    user_id : int
+    main_color : str
+    secondary_color : str
+    cover_image_filename : str
+    logo_filename : str

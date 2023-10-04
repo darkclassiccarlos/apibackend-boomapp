@@ -1,5 +1,5 @@
 from .database      import Base, engine
-from sqlalchemy     import Column, Integer, String, ForeignKey, BIGINT, Boolean, Float, DateTime
+from sqlalchemy     import Column, Integer, String, ForeignKey, BIGINT, Boolean, Float, DateTime,Text
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from datetime import datetime
@@ -59,8 +59,6 @@ class products(Base):
 
     family_products = relationship('familyproducts', back_populates='product')
 
-
-
 class passwordRecoveryRequest(Base):
     __tablename__ = 'passwordRecoveryRequest'
 
@@ -69,6 +67,29 @@ class passwordRecoveryRequest(Base):
     token = Column(String(255),nullable = False)
     date_request =  Column(DateTime, default=datetime.utcnow)
 
+class business(Base):
+    __tablename__ = "business"  # Reemplaza con el nombre de tu tabla
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), index=True)
+    adress = Column(String(255))
+    telephone = Column(String(20))
+    email = Column(String(255))
+    description = Column(Text)
+    category = Column(String(50))
+    category = Column(String(100))
+    website = Column(String(255))
+    picture = Column(String(255))
+    users_id = Column(Integer, ForeignKey("users.id"))
+
+class designsconfigurations(Base):
+    __tablename__ = "designs_configurations"  # Reemplaza con el nombre de tu tabla
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("business.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    main_color = Column(String(50))
+    secondary_color = Column(String(50))
+    cover_image_filename = Column(String(255))
+    logo_filename = Column(String(255))
 
 
 Base.metadata.create_all(engine)

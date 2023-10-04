@@ -53,13 +53,12 @@ async def login(request: Request,
                 "user_id": user["id"]
             }
             token = create_jwt_token(user)
-            return {"access_token": token, "token_type": "bearer"}
-
+            return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
         else: 
-            return "Incorrect Username or Password"
+            raise HTTPException(status_code=401, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail="Unkwon error")
+        raise HTTPException(status_code=404, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
 
 @router.post("/logout")
 def logout(db: Session = Depends(get_db)):
@@ -97,9 +96,9 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
 
 @router.post("/forgot_pass")
 def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
-    user_email = db.query(users).filter(users.email == form_data.destinatario).first()
+    user_email = db.query(users).filter(users.email == form_data.email).first()
     if user_email is None:
-        raise HTTPException(status_code=400, detail="El usuario ya existe")    
+        raise HTTPException(status_code=401, detail="El usuario no existe")    
     now = datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
     data = {"user_id": user_email.id,
@@ -116,7 +115,7 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         delta_request = now
         print(delta_request)
     if rquest_recovery and delta_request <= timedelta(minutes=5):
-        raise HTTPException(status_code=400, detail="Ya hay una petición en curso")
+        raise HTTPException(status_code=401, detail="Ya hay una petición en curso")
     try:
         db.add(db_rquest_recovery)
         db.commit()  # Confirma la transacción
@@ -125,11 +124,11 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         #url = "https://boom-backend-test.onrender.com/auth/recover_password/?token="+f"{token_recovery_password}"
         url = "https://wsa-dev.boomtel.com.co/auth/reset-password?token="+f"{token_recovery_password}"
         # Crea el nuevo usuario
-        response = enviar_correo(form_data.destinatario, "Recovery Passtword", url)
-        return response
+        response = enviar_correo(form_data.email, "Recovery Passtword", url)
+        return {"response":"sending token"}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail="Unkwon error")
+        raise HTTPException(status_code=401, detail="No se pudo enviar el token")
     
 
 @router.post("/validate_recovery_password")

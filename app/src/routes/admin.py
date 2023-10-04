@@ -12,8 +12,8 @@ from sqlalchemy import select, join
 #local imports
 from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
 from ..db.database import get_db
-from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts
-from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate
+from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
+from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate, Business,DesignsConfigurations
 from ..db import users_actions
 
 
@@ -114,3 +114,19 @@ def create_product(product: ProductCreate, db = Depends(get_db)):
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# Endpoint para crear un negocio
+# @router.post("/save_business/")
+# def save_business(business: Business, db = Depends(get_db)):
+#     db.add(business)
+#     db.commit()
+#     db.refresh(business)
+#     return business
+
+# Endpoint para crear una configuración de diseño
+# @router.post("/save_configuration_designs/")
+# def save_configuration_designs(configurations: DesignsConfigurations, db = Depends(get_db)):
+#     db.add(configurations)
+#     db.commit()
+#     db.refresh(configurations)
+#     return configurations

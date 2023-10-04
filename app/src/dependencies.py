@@ -25,7 +25,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Clave secreta para firmar el token (deberías guardarse esto de manera segura per ya vemos)
 SECRET_KEY = "tu_clave_secreta"
 # Tiempo de expiración del token (en segundos)
-TOKEN_EXPIRATION = timedelta(minutes=5)
+TOKEN_EXPIRATION = timedelta(minutes=15)
 
 class User:
     def __init__(self, id: int, username: str, password: str):
