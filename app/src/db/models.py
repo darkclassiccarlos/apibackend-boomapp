@@ -64,14 +64,14 @@ class PasswordRecovery(BaseModel):
     users_id: str
     new_password: str
 
-class Business(BaseModel):
+class BusinessSave(BaseModel):
     name : str
     adress : str
     telephone : str
     email : str
     description : str
     category : str
-    category : str
+    website : str
     picture : str
     users_id : int
 

@@ -13,7 +13,7 @@ from sqlalchemy import select, join
 from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
-from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate, Business,DesignsConfigurations
+from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate,BusinessSave,DesignsConfigurations
 from ..db import users_actions
 
 
@@ -35,15 +35,16 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
                 users.email,
                 familys.name.label('family'),
                 familys.id,
+                familyproducts.id, ### Campo nuevo
                 products.id,
                 products.name.label('name'),
                 products.namefile,
                 products.price
             )
             .select_from(
-                join(familyproducts, familys, familys.id == familyproducts.family_id)
-                .join(products, familyproducts.product_id == products.id)
-                .join(users, familys.user_id == users.id)
+                join(familys,familyproducts, familys.id == familyproducts.family_id,  isouter=True)
+                .join(products, familyproducts.product_id == products.id,  isouter=True)
+                .join(users, familys.user_id == users.id, isouter=True)
             )
             .where(users.email == email)
         )
@@ -52,12 +53,15 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
         catalog = {}
         for row in result:
             family_name = row[1],
-            product_data = {
-                "product_id": row[3],
-                "name": row[4],
-                "image": row[5],
-                "price": row[6]
-            }
+            if row[3]: 
+                product_data = {
+                    "product_id": row[4],
+                    "name": row[5],
+                    "image": row[6],
+                    "price": row[7]
+                }
+            else:
+                product_data = {}
             if family_name not in catalog:
                 catalog[family_name] = {"family": row[1],"family_id": row[2], "products": []}
 
@@ -116,17 +120,42 @@ def create_product(product: ProductCreate, db = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Endpoint para crear un negocio
-# @router.post("/save_business/")
-# def save_business(business: Business, db = Depends(get_db)):
-#     db.add(business)
-#     db.commit()
-#     db.refresh(business)
-#     return business
+@router.post("/save_business/")
+def save_business(businessObject: BusinessSave, db = Depends(get_db)):
+    try:
+        businessdb = business(name=businessObject.name,
+                            adress=businessObject.adress,
+                            telephone=businessObject.telephone,
+                            email=businessObject.email,
+                            description=businessObject.description,
+                            category=businessObject.category,
+                            website=businessObject.website,
+                            picture=businessObject.picture,
+                            users_id=businessObject.users_id)
+        db.add(businessdb)
+        db.commit()
+        db.refresh(businessdb)
+        return { "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                            "message": "Negocio creado",
+                            "family_id": businessdb.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
 
 # Endpoint para crear una configuración de diseño
-# @router.post("/save_configuration_designs/")
-# def save_configuration_designs(configurations: DesignsConfigurations, db = Depends(get_db)):
-#     db.add(configurations)
-#     db.commit()
-#     db.refresh(configurations)
-#     return configurations
+@router.post("/save_configuration_designs/")
+def save_configuration_designs(configurations: DesignsConfigurations, db = Depends(get_db)):
+    try:
+        configurationsdb = designsconfigurations(business_id= configurations.business_id,
+                            user_id=configurations.user_id,
+                            main_color=configurations.main_color,
+                            secondary_color=configurations.secondary_color,
+                            cover_image_filename=configurations.cover_image_filename,
+                            logo_filename=configurations.logo_filename)
+        db.add(configurationsdb)
+        db.commit()
+        db.refresh(configurationsdb)
+        return { "success": True,"message": "configuracion creado","family_id": configurationsdb.id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

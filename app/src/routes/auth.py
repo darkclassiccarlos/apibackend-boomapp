@@ -68,12 +68,9 @@ def logout(db: Session = Depends(get_db)):
 # Ruta para registrar un usuario
 @router.post("/register/")
 def register_user(userdb: UserBase, db = Depends(get_db)):
-    print("Trying user creation")
     # Verifica si el usuario ya existe
-    print(userdb)
     passwhordhash = cryptpass(userdb.password)
     db_user = users(name=userdb.fullName, password=passwhordhash, email =userdb.email, rol_id = userdb.rol_id)
-    print(db_user)
     user_db = db.query(users).filter(users.email == userdb.email).first()
     if user_db:
         raise HTTPException(status_code=400, detail="El usuario ya existe")

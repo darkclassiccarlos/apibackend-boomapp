@@ -76,7 +76,6 @@ class business(Base):
     email = Column(String(255))
     description = Column(Text)
     category = Column(String(50))
-    category = Column(String(100))
     website = Column(String(255))
     picture = Column(String(255))
     users_id = Column(Integer, ForeignKey("users.id"))
