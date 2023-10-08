@@ -53,7 +53,7 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
         catalog = {}
         for row in result:
             family_name = row[1],
-            if row[3]: 
+            if row[3]:
                 product_data = {
                     "product_id": row[4],
                     "name": row[5],
@@ -61,7 +61,7 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
                     "price": row[7]
                 }
             else:
-                product_data = {}
+                product_data = None
             if family_name not in catalog:
                 catalog[family_name] = {"family": row[1],"family_id": row[2], "products": []}
 
