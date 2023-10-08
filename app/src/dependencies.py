@@ -11,8 +11,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .db.database import get_db
 import jwt
 from datetime import datetime, timedelta
-from .db.db_models import users, roluser
-
+from .db.db_models import users, roluser, familys, products
+from .db.models import FamilyCreateBase,ProductCreate
 # smtp librarys
 import smtplib
 from email.mime.text import MIMEText
@@ -113,3 +113,18 @@ def enviar_correo(destinatario, asunto, mensaje):
 
     # Cierra la conexión con el servidor SMTP
     servidor_smtp.quit()
+
+def update_familys(db: Session, familyupdate : FamilyCreateBase) -> familys | None:
+    db.add(familyupdate)
+    db.commit()
+    db.refresh(familyupdate)
+    
+    return familyupdate
+
+
+def update_product(db: Session, productupdate : ProductCreate) -> products | None:
+    db.add(productupdate)
+    db.commit()
+    db.refresh(productupdate)
+    print(productupdate.as_dict())
+    return productupdate

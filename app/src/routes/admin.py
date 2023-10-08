@@ -10,7 +10,7 @@ import jwt
 from sqlalchemy import select, join
 
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
+from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token,update_familys,update_product)
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
 from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate,BusinessSave,DesignsConfigurations
@@ -73,49 +73,77 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-# Endpoint para crear una familia de productos
+# Endpoint para crear una familia de productos ( modificar, para hacerlo updateSave)
 @router.post("/families/")
-def create_family(family: FamilyCreateBase, db = Depends(get_db)):
+async def create_family(request: Request, family: FamilysBase, db = Depends(get_db)):
     try:
-        user = db.query(users).filter(users.id == family.user_id).first()
-        if user is None:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        db_family = familys(**family.dict())
-        db.add(db_family)
-        db.commit()
-        db.refresh(db_family)
-        #family = db.query(familys).filter(familys.name == family.name, familys.user_id == family.user_id).first()
-        #response = db_family.as_dict()
-        response = {
-                    "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
-                    "message": "familia creada",
-                    "family_id": db_family.id
-                }
+        familydb = db.query(familys).filter(familys.id == family.id, familys.user_id == family.user_id).first()
+        if familydb:
+            formdata=await request.form()
+            familydb.isactive = family.isactive
+            familydb.name = family.name
+            familydb.user_id = family.user_id
+            updated_familys = update_familys(db=db, familyupdate=familydb)
+            response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "familia actualizada",
+                        "family_id": updated_familys.id
+                    }
+            return response
+        else:
+            familynew = familys(isactive=family.isactive,name=family.name,user_id=family.user_id)
+            db_family = familys(**familynew.as_dict())
+            db.add(db_family)
+            db.commit()
+            db.refresh(db_family)
+            #family = db.query(familys).filter(familys.name == family.name, familys.user_id == family.user_id).first()
+            #response = db_family.as_dict()
+            response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "familia creada",
+                        "family_id": db_family.id
+                    }
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
 # Endpoint para crear un producto
 @router.post("/products/")
-def create_product(product: ProductCreate, db = Depends(get_db)):
+async def create_product(request: Request, product: ProductCreate, db = Depends(get_db)):
     try:
-        # Crear el producto
-        db_product = products(**product.dict(exclude={"family_ids"}))
-        db.add(db_product)
-        db.commit()
-        db.refresh(db_product)
-
-        # Asociar el producto con las familias
-        for family_id in product.family_ids:
-            family_product = familyproducts(family_id=family_id, product_id=db_product.id)
-            db.add(family_product)
-        db.commit()
-        response = {
+        familyproductdb = db.query(familyproducts).filter(familyproducts.family_id == product.family_ids,familyproducts.product_id == product.id).first()
+        if familyproductdb:
+            productdb = db.query(products).filter(products.id == familyproductdb.product_id).first()
+            formdata = await request.form()
+            productdb.name = product.name
+            productdb.namefile = product.namefile
+            productdb.price = product.price
+            updated_product = update_product(db=db, productupdate= productdb)
+            response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
-                        "message": "producto creado",
-                        "family_id": db_product.id
+                        "message": "producto actualizado",
+                        "family_id": updated_product.id
                     }
-        return response
+            return response
+        else:
+            # Crear el producto
+            #db_product = products(**product.dict(exclude={"family_ids"}))
+            db_product = products(name=product.name,namefile=product.namefile,price=product.price)
+            db_product = products(**db_product.as_dict())
+            db.add(db_product)
+            db.commit()
+            db.refresh(db_product)
+            # Asociar el producto con las familias
+            for family_id in product.family_ids:
+                family_product = familyproducts(family_id=family_id, product_id=db_product.id)
+                db.add(family_product)
+                db.commit()
+            response = {
+                            "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                            "message": "Producto creado",
+                            "family_id": db_product.id
+                        }
+            return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 

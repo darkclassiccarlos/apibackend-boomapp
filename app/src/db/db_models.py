@@ -58,7 +58,10 @@ class products(Base):
     price = Column(Float(precision=2), nullable=False)
 
     family_products = relationship('familyproducts', back_populates='product')
+    def as_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
+    
 class passwordRecoveryRequest(Base):
     __tablename__ = 'passwordRecoveryRequest'
 

@@ -37,7 +37,7 @@ def read_user(user_id: int, db = Depends(get_db)):
 #Actualizar un usuario por  ID
 @router.post('/update_user/{id}')
 async def update_user(request: Request, response:Response, id:int, user_update: UserBaseUpdate, db: Session = Depends(get_db)):
-    print("Editing user page")
+    print("Editing user user")
     edit_user = db.query(users).filter(users.id == id).first()
     if not edit_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -46,4 +46,4 @@ async def update_user(request: Request, response:Response, id:int, user_update: 
     edit_user.email = user_update.email
     edit_user.rol_id = user_update.rol_id
     updated_user = users_actions.update_user(db=db, user=edit_user)
-    return {f"updated_user:"}
+    return {f"updated_user"}
