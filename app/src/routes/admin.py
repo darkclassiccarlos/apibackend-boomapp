@@ -62,10 +62,12 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
                 }
             else:
                 product_data = None
+            
             if family_name not in catalog:
-                catalog[family_name] = {"family": row[1],"family_id": row[2], "products": None if row[3] is None or row[3] == '' else []}
-
-            catalog[family_name]["products"].append(product_data)
+                catalog[family_name] = {"family": row[1],"family_id": row[2], "products": None if product_data is None else []}
+            
+            if product_data is not None:
+                catalog[family_name]["products"].append(product_data)
 
         user_data = {"user": email, "catalog": list(catalog.values())}
 
