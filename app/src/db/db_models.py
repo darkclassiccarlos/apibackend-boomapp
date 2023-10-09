@@ -82,7 +82,7 @@ class business(Base):
     description = Column(Text)
     category = Column(String(50))
     website = Column(String(255))
-    picture = Column(String(255))
+    qrpicture = Column(Text)
     users_id = Column(Integer, ForeignKey("users.id"))
 
 class designsconfigurations(Base):

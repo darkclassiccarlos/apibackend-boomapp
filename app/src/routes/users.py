@@ -24,26 +24,28 @@ def root():
 #Obtener un usuario por ID
 @router.get("/{user_id}")
 def read_user(user_id: int, db = Depends(get_db)):
-    #try:
-    print(user_id)
-    user_db = db.query(users).filter(users.id == user_id).first()
-    print(user_db)
-    if user_db is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user_db
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail="Error en la base de datos")
+    try:
+        print(user_id)
+        user_db = db.query(users).filter(users.id == user_id).first()
+        print(user_db)
+        if user_db is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return user_db
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error en la base de datos")
 
 #Actualizar un usuario por  ID
 @router.post('/update_user/{id}')
 async def update_user(request: Request, response:Response, id:int, user_update: UserBaseUpdate, db: Session = Depends(get_db)):
-    print("Editing user user")
-    edit_user = db.query(users).filter(users.id == id).first()
-    if not edit_user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    formdata = await request.form()
-    edit_user.name = user_update.fullName
-    edit_user.email = user_update.email
-    edit_user.rol_id = user_update.rol_id
-    updated_user = users_actions.update_user(db=db, user=edit_user)
-    return {f"updated_user"}
+    try:
+        edit_user = db.query(users).filter(users.id == id).first()
+        if not edit_user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        formdata = await request.form()
+        edit_user.name = user_update.fullName
+        edit_user.email = user_update.email
+        edit_user.rol_id = user_update.rol_id
+        updated_user = users_actions.update_user(db=db, user=edit_user)
+        return {f"updated_user"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error en la base de datos")

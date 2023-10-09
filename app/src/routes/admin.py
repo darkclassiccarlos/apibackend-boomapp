@@ -29,7 +29,6 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
         family = FamilysBase
         product = ProductsBase
         family_product = FamilyproductsBase
-        # Consulta SQL para obtener el catálogo del usuario
         stmt = (
             select(
                 users.email,
@@ -49,7 +48,6 @@ async def get_user_catalog(email: str, db = Depends(get_db)):
             .where(users.email == email)
         )
         result = db.execute(stmt)
-        # Organizar los resultados en la estructura JSON requerida
         catalog = {}
         for row in result:
             family_name = row[1],
@@ -98,8 +96,6 @@ async def create_family(request: Request, family: FamilysBase, db = Depends(get_
             db.add(db_family)
             db.commit()
             db.refresh(db_family)
-            #family = db.query(familys).filter(familys.name == family.name, familys.user_id == family.user_id).first()
-            #response = db_family.as_dict()
             response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                         "message": "familia creada",
@@ -129,13 +125,11 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
             return response
         else:
             # Crear el producto
-            #db_product = products(**product.dict(exclude={"family_ids"}))
             db_product = products(name=product.name,namefile=product.namefile,price=product.price)
             db_product = products(**db_product.as_dict())
             db.add(db_product)
             db.commit()
             db.refresh(db_product)
-            # Asociar el producto con las familias
             for family_id in product.family_ids:
                 family_product = familyproducts(family_id=family_id, product_id=db_product.id)
                 db.add(family_product)
@@ -153,25 +147,24 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
 @router.post("/save_business/")
 def save_business(businessObject: BusinessSave, db = Depends(get_db)):
     try:
+        website = create_website(businessObject.name)
         businessdb = business(name=businessObject.name,
                             adress=businessObject.adress,
                             telephone=businessObject.telephone,
                             email=businessObject.email,
                             description=businessObject.description,
                             category=businessObject.category,
-                            website=businessObject.website,
-                            picture=businessObject.picture,
+                            website=website,
+                            qrpicture=create_business_qr(website),
                             users_id=businessObject.users_id)
         db.add(businessdb)
         db.commit()
-        db.refresh(businessdb)
+        db.refresh(business)
         return { "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                             "message": "Negocio creado",
                             "family_id": businessdb.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-
 
 # Endpoint para crear una configuración de diseño
 @router.post("/save_configuration_designs/")
@@ -193,12 +186,9 @@ def save_configuration_designs(configurations: DesignsConfigurations, db = Depen
 
 @router.delete("/rm_family/{familia_id}")
 async def remove_family(familia_id: int, db = Depends(get_db)):
-    # Verificar si la familia existe
     family = db.query(familys).filter(familys.id == familia_id).first()
     if family is None:
         raise HTTPException(status_code=404, detail="La familia no existe")
-    # Aquí puedes realizar cualquier lógica adicional antes de la eliminación si es necesario
-    # Eliminar todos los productos de la familia
     response = remove_products_familys(db, familia_id)
     db.delete(family)
     db.commit()
@@ -210,14 +200,12 @@ async def remove_family(familia_id: int, db = Depends(get_db)):
     
 @router.delete("/rm_product/{product_id}")
 async def remove_family(product_id: int, db = Depends(get_db)):
-    # Verificar si la familia existe
     product = db.query(products).filter(product.id == product_id).first()
     if product is None:
         raise HTTPException(status_code=404, detail="el producto no existe")
-    # Aquí puedes realizar cualquier lógica adicional antes de la eliminación si es necesario
-    # Eliminar todos los productos de la familia
     response = remove_products(db, product_id)
     return {"success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
             "mensaje": response,
             "family_id": family.id
             }
+

@@ -73,8 +73,6 @@ class BusinessSave(BaseModel):
     email : str
     description : str
     category : str
-    website : str
-    picture : str
     users_id : int
 
 class DesignsConfigurations(BaseModel):
