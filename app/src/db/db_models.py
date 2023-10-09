@@ -33,6 +33,8 @@ class familyproducts(Base):
     # Relaciones con 'Family' y 'Product'
     family = relationship('familys', back_populates='family_products')
     product = relationship('products', back_populates='family_products')
+    def as_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
 
 class familys(Base):

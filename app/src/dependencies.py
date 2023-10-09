@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .db.database import get_db
 import jwt
 from datetime import datetime, timedelta
-from .db.db_models import users, roluser, familys, products
+from .db.db_models import users, roluser, familys, products,familyproducts
 from .db.models import FamilyCreateBase,ProductCreate
 # smtp librarys
 import smtplib
@@ -128,3 +128,36 @@ def update_product(db: Session, productupdate : ProductCreate) -> products | Non
     db.refresh(productupdate)
     print(productupdate.as_dict())
     return productupdate
+
+
+def remove_products_familys(db: Session, familia_id: int):
+    familyProductIds = db.query(familyproducts).filter(familyproducts.family_id==familia_id).all()
+    if familyProductIds:
+        productsToDelete = len(familyProductIds)
+        for familyProductId in familyProductIds:
+            db.delete(familyProductId)
+            db.commit()
+            db.refresh(familyproducts)
+            print(familyProductId.product_id)
+            producto = db.query(products).filter(products.id == familyProductId.product_id).all()
+            db.delete(producto)
+            db.commit()
+            db.refresh(products)
+        return {"elementos eliminados":productsToDelete}
+    else:
+        return {"No existe elementos para borrar"}
+
+
+def remove_products(db: Session, product_id: int):
+    familyProductIds = db.query(familyproducts).filter(familyproducts.product_id==product_id).all()
+    if familyProductIds:
+        db.delete(familyProductId)
+        db.commit()
+        db.refresh(familyproducts)
+        producto = db.query(products).filter(products.id == familyProductId.product_id).all()
+        db.delete(producto)
+        db.commit()
+        db.refresh(products)
+        return {"elemento eliminado":producto.name}
+    else:
+        return {"No existe elementos para borrar"}

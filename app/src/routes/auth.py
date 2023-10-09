@@ -86,6 +86,7 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
                 "result": userdb.fullName
             }
         token = create_jwt_token(response)
+
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
         print(e)
@@ -104,13 +105,10 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
     token_recovery_password = create_jwt_token(data)
     db_rquest_recovery = passwordRecoveryRequest(users_id=user_email.id, token=token_recovery_password, date_request =now)
     rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.users_id == user_email.id).first()
-    print(rquest_recovery)
     if rquest_recovery:
         delta_request = now - rquest_recovery.date_request
-        print(delta_request)
     else:
         delta_request = now
-        print(delta_request)
     if rquest_recovery and delta_request <= timedelta(minutes=5):
         raise HTTPException(status_code=401, detail="Ya hay una petición en curso")
     try:

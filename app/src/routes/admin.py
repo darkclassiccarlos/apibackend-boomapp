@@ -10,7 +10,7 @@ import jwt
 from sqlalchemy import select, join
 
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token,update_familys,update_product)
+from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token,update_familys,update_product,remove_products_familys,remove_products)
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
 from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate,BusinessSave,DesignsConfigurations
@@ -189,3 +189,35 @@ def save_configuration_designs(configurations: DesignsConfigurations, db = Depen
         return { "success": True,"message": "configuracion creado","family_id": configurationsdb.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        
+
+@router.delete("/rm_family/{familia_id}")
+async def remove_family(familia_id: int, db = Depends(get_db)):
+    # Verificar si la familia existe
+    family = db.query(familys).filter(familys.id == familia_id).first()
+    if family is None:
+        raise HTTPException(status_code=404, detail="La familia no existe")
+    # Aquí puedes realizar cualquier lógica adicional antes de la eliminación si es necesario
+    # Eliminar todos los productos de la familia
+    response = remove_products_familys(db, familia_id)
+    db.delete(family)
+    db.commit()
+    db.refresh(familys)
+    return {"success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+            "mensaje": response,
+            "family_id": family.id
+            }
+    
+@router.delete("/rm_product/{product_id}")
+async def remove_family(product_id: int, db = Depends(get_db)):
+    # Verificar si la familia existe
+    product = db.query(products).filter(product.id == product_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="el producto no existe")
+    # Aquí puedes realizar cualquier lógica adicional antes de la eliminación si es necesario
+    # Eliminar todos los productos de la familia
+    response = remove_products(db, product_id)
+    return {"success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+            "mensaje": response,
+            "family_id": family.id
+            }
