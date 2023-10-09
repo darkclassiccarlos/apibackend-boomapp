@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import NullPool, QueuePool
 import os
 
 # # Especifica la ubicación del archivo .env
@@ -18,7 +18,7 @@ DATABASE = os.getenv("HOSTTINGER_DB")
 SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:3306/{DATABASE}"
 engine = create_engine(
      SQLALCHEMY_DATABASE_URL,
-     poolclass=NullPool,
+     poolclass=QueuePool,
      #pool_size=20,
      pool_recycle=3600,
      #pool_pre_ping=True
