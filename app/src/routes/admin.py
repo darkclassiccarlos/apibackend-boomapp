@@ -192,7 +192,7 @@ async def remove_family(familia_id: int, db = Depends(get_db)):
     response = remove_products_familys(db, familia_id)
     db.delete(family)
     db.commit()
-    db.refresh(familys)
+    #db.refresh(familys)
     return {"success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
             "mensaje": response,
             "family_id": family.id
@@ -200,12 +200,12 @@ async def remove_family(familia_id: int, db = Depends(get_db)):
     
 @router.delete("/rm_product/{product_id}")
 async def remove_family(product_id: int, db = Depends(get_db)):
-    product = db.query(products).filter(product.id == product_id).first()
-    if product is None:
+    productdb = db.query(products).filter(products.id == product_id).first()
+    if productdb is None:
         raise HTTPException(status_code=404, detail="el producto no existe")
     response = remove_products(db, product_id)
     return {"success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
             "mensaje": response,
-            "family_id": family.id
+            "family_id": productdb.id
             }
 

@@ -128,27 +128,27 @@ def remove_products_familys(db: Session, familia_id: int):
         for familyProductId in familyProductIds:
             db.delete(familyProductId)
             db.commit()
-            db.refresh(familyproducts)
+            #db.refresh(familyproducts)
             print(familyProductId.product_id)
-            producto = db.query(products).filter(products.id == familyProductId.product_id).all()
+            producto = db.query(products).filter(products.id == familyProductId.product_id).first()
             db.delete(producto)
             db.commit()
-            db.refresh(products)
+            #db.refresh(products)
         return {"elementos eliminados":productsToDelete}
     else:
         return {"No existe elementos para borrar"}
 
 
 def remove_products(db: Session, product_id: int):
-    familyProductIds = db.query(familyproducts).filter(familyproducts.product_id==product_id).all()
+    familyProductIds = db.query(familyproducts).filter(familyproducts.product_id==product_id).first()
     if familyProductIds:
-        db.delete(familyProductId)
+        db.delete(familyProductIds)
         db.commit()
-        db.refresh(familyproducts)
-        producto = db.query(products).filter(products.id == familyProductId.product_id).all()
+        #db.refresh(familyproducts)
+        producto = db.query(products).filter(products.id == product_id).first()
         db.delete(producto)
         db.commit()
-        db.refresh(products)
+        #db.refresh(products)
         return {"elemento eliminado":producto.name}
     else:
         return {"No existe elementos para borrar"}
