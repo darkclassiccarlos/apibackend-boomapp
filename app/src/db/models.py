@@ -67,13 +67,14 @@ class PasswordRecovery(BaseModel):
     new_password: str
 
 class BusinessSave(BaseModel):
+    id: Optional[int]
     name : str
     adress : str
     telephone : str
     email : str
     description : str
     category : str
-    users_id : int
+    users_id : Optional[int]
 
 class DesignsConfigurations(BaseModel):
     business_id : int

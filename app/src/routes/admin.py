@@ -10,7 +10,20 @@ import jwt
 from sqlalchemy import select, join
 
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token,update_familys,update_product,remove_products_familys,remove_products)
+from ..dependencies import (
+    cryptpass,
+    create_jwt_token,
+    get_current_user,
+    enviar_correo,
+    decode_jwt_token,
+    update_familys,
+    update_product,
+    remove_products_familys,
+    remove_products,
+    create_business_qr,
+    create_website,
+    update_entity,
+)
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
 from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate,BusinessSave,DesignsConfigurations
@@ -148,21 +161,43 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
 def save_business(request: Request, businessObject: BusinessSave, db = Depends(get_db)):
     try:
         website = create_website(businessObject.name)
-        businessdb = business(name=businessObject.name,
-                            adress=businessObject.adress,
-                            telephone=businessObject.telephone,
-                            email=businessObject.email,
-                            description=businessObject.description,
-                            category=businessObject.category,
-                            website=website,
-                            qrpicture=create_business_qr(website),
-                            users_id=businessObject.users_id)
-        db.add(businessdb)
-        db.commit()
-        db.refresh(business)
-        return { "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+
+
+        businessdb = db.query(business).filter(business.id == businessObject.id).first()
+        if businessdb:
+            businessdb.name = businessObject.name
+            businessdb.adress = businessObject.adress
+            businessdb.telephone = businessObject.telephone
+            businessdb.email = businessObject.email
+            businessdb.description = businessObject.description
+            businessdb.category = businessObject.category
+            updated_entity = update_entity(businessdb, db=db)
+            response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "negocio actualizado",
+                        "entity_id": updated_entity.id
+                    }
+            
+        else:
+
+            
+            businessdb = business(name=businessObject.name,
+                                adress=businessObject.adress,
+                                telephone=businessObject.telephone,
+                                email=businessObject.email,
+                                description=businessObject.description,
+                                category=businessObject.category,
+                                website=website,
+                                qrpicture=create_business_qr(website),
+                                users_id=businessObject.users_id)
+            db.add(businessdb)
+            db.commit()
+            response = {    "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                             "message": "Negocio creado",
-                            "family_id": businessdb.id}
+                            "entity_id": businessdb.id
+                        }
+            
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 

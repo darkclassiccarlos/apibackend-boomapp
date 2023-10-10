@@ -117,8 +117,13 @@ def update_product(db: Session, productupdate : ProductCreate) -> products | Non
     db.add(productupdate)
     db.commit()
     db.refresh(productupdate)
-    print(productupdate.as_dict())
     return productupdate
+
+def update_entity(entityupdate, db: Session):
+    db.add(entityupdate)
+    db.commit()
+    db.refresh(entityupdate)
+    return entityupdate
 
 
 def remove_products_familys(db: Session, familia_id: int):
@@ -161,5 +166,5 @@ def create_business_qr(data):
     return img_str
 
 def create_website(data):
-    response = f"{data}boom.com.co"
+    response = f"{data}.boom.com.co"
     return response
