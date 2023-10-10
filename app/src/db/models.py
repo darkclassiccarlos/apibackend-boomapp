@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     password : str
     email : str
     picture: Optional[str]
-    rol_id: int 
+    rol_id: Optional[int]
 
 class UserBaseCatalog(BaseModel):
     id: int
@@ -28,12 +28,13 @@ class FamilyproductsBase(BaseModel):
     producto_id : str
 
 class FamilysBase(BaseModel):
-    id: int
+    id: Optional[int]
     isactive : bool 
     name : str
     user_id : int
 
 class FamilyCreateBase(BaseModel):
+    id: Optional[int]
     isactive: bool
     name: str
     user_id: int
@@ -45,17 +46,18 @@ class ProductsBase(BaseModel):
     price : float
 
 class ProductCreate(BaseModel):
-    name: str
-    namefile: str
-    price: float
-    family_ids: List[int]
+    id: Optional[int]
+    name: Optional[str]
+    namefile: Optional[str]
+    price: Optional[float]
+    family_ids: list[int]
 
 class CustomOAuth2PasswordRequestForm(BaseModel):
     email: str
     password: str
 
 class emailRequest(BaseModel):
-    destinatario: str
+    email: str
 
 class recoveryPassword(BaseModel):
     token: str
@@ -63,3 +65,21 @@ class recoveryPassword(BaseModel):
 class PasswordRecovery(BaseModel):
     users_id: str
     new_password: str
+
+class BusinessSave(BaseModel):
+    id: Optional[int]
+    name : str
+    adress : str
+    telephone : str
+    email : str
+    description : str
+    category : str
+    users_id : Optional[int]
+
+class DesignsConfigurations(BaseModel):
+    business_id : int
+    user_id : int
+    main_color : str
+    secondary_color : str
+    cover_image_filename : str
+    logo_filename : str

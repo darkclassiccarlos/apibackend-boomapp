@@ -2,6 +2,9 @@
 # user_functions.py
 from fastapi import Request
 from sqlalchemy.orm import Session
+import base64
+from io import BytesIO
+import segno
 
 from typing import Dict, Optional
 import mysql.connector
@@ -11,8 +14,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .db.database import get_db
 import jwt
 from datetime import datetime, timedelta
-from .db.db_models import users, roluser
-
+from .db.db_models import users, roluser, familys, products,familyproducts
+from .db.models import FamilyCreateBase,ProductCreate
 # smtp librarys
 import smtplib
 from email.mime.text import MIMEText
@@ -25,14 +28,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Clave secreta para firmar el token (deberías guardarse esto de manera segura per ya vemos)
 SECRET_KEY = "tu_clave_secreta"
 # Tiempo de expiración del token (en segundos)
-TOKEN_EXPIRATION = timedelta(minutes=5)
+TOKEN_EXPIRATION = timedelta(minutes=15)
 
 class User:
     def __init__(self, id: int, username: str, password: str):
         self.id = id
         self.username = username
         self.password = password
-# Agrega cualquier otra lógica relacionada con usuarios aquí
 
 def cryptpass(password: str):
     # Genera el hash de la contraseña
@@ -89,27 +91,67 @@ def enviar_correo(destinatario, asunto, mensaje):
     remitente = 'contacto@boomtel.com.co'  # Tu dirección de smtp
     contraseña = 'Contacto123*'     # Tu contraseña de smtp
 
-    # Crea un objeto SMTP y establece la conexión con el servidor 
     servidor_smtp = smtplib.SMTP('smtp.hostinger.com', 587)
     servidor_smtp.starttls()
     servidor_smtp.login(remitente, contraseña)
 
-    # Crea un mensaje de correo
     mensaje_correo = MIMEMultipart()
     mensaje_correo['From'] = remitente
     mensaje_correo['To'] = destinatario
     mensaje_correo['Subject'] = asunto
 
-    # Agrega el mensaje de texto al correo
     mensaje_correo.attach(MIMEText(mensaje, 'plain'))
-    # Si hay un archivo adjunto, agrégalo al correo
-    # if adjunto:
-    #     with open(adjunto, "rb") as archivo_adjunto:
-    #         adjunto_mime = MIMEApplication(archivo_adjunto.read(), _subtype="pdf")
-    #     adjunto_mime.add_header('Content-Disposition', 'attachment', filename=adjunto)
-    #     mensaje_correo.attach(adjunto_mime)
-    # Envía el correo electrónico
     servidor_smtp.sendmail(remitente, destinatario, mensaje_correo.as_string())
 
-    # Cierra la conexión con el servidor SMTP
     servidor_smtp.quit()
+
+
+def update_entity(entityupdate, db: Session):
+    db.add(entityupdate)
+    db.commit()
+    db.refresh(entityupdate)
+    return entityupdate
+
+
+def remove_products_familys(db: Session, familia_id: int):
+    familyProductIds = db.query(familyproducts).filter(familyproducts.family_id==familia_id).all()
+    if familyProductIds:
+        productsToDelete = len(familyProductIds)
+        for familyProductId in familyProductIds:
+            db.delete(familyProductId)
+            db.commit()
+            #db.refresh(familyproducts)
+            print(familyProductId.product_id)
+            producto = db.query(products).filter(products.id == familyProductId.product_id).first()
+            db.delete(producto)
+            db.commit()
+            #db.refresh(products)
+        return {"elementos eliminados":productsToDelete}
+    else:
+        return {"No existe elementos para borrar"}
+
+
+def remove_products(db: Session, product_id: int):
+    familyProductIds = db.query(familyproducts).filter(familyproducts.product_id==product_id).first()
+    if familyProductIds:
+        db.delete(familyProductIds)
+        db.commit()
+        #db.refresh(familyproducts)
+        producto = db.query(products).filter(products.id == product_id).first()
+        db.delete(producto)
+        db.commit()
+        #db.refresh(products)
+        return {"elemento eliminado":producto.name}
+    else:
+        return {"No existe elementos para borrar"}
+
+def create_business_qr(data):
+    buffered = BytesIO()
+    qr = segno.make_qr(data)
+    qr.save(buffered, kind= "png", scale=9, border=1)
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return img_str
+
+def create_website(data):
+    response = f"{data}.boom.com.co"
+    return response
