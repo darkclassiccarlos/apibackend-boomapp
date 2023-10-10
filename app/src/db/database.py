@@ -18,7 +18,7 @@ DATABASE = os.getenv("HOSTTINGER_DB")
 SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:3306/{DATABASE}"
 engine = create_engine(
      SQLALCHEMY_DATABASE_URL,
-     poolclass=QueuePool,
+     poolclass=NullPool,
      #pool_size=20,
      pool_recycle=3600,
      #pool_pre_ping=True

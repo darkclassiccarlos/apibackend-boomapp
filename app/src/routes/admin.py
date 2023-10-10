@@ -145,7 +145,7 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
 
 # Endpoint para crear un negocio
 @router.post("/save_business/")
-def save_business(businessObject: BusinessSave, db = Depends(get_db)):
+def save_business(request: Request, businessObject: BusinessSave, db = Depends(get_db)):
     try:
         website = create_website(businessObject.name)
         businessdb = business(name=businessObject.name,
