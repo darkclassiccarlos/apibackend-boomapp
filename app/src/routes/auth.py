@@ -126,8 +126,8 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="No se pudo enviar el token")
     
 
-@router.post("/validate_recovery_password")
-async def validate_recovery_password(token: str = Header(None), db = Depends(get_db)):
+@router.post("/validate_token")
+async def validate_token(token: str = Header(None), db = Depends(get_db)):
     try:
         payload = decode_jwt_token(token)
         #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
