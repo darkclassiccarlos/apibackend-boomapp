@@ -105,19 +105,6 @@ def enviar_correo(destinatario, asunto, mensaje):
 
     servidor_smtp.quit()
 
-def update_familys(db: Session, familyupdate : FamilyCreateBase) -> familys | None:
-    db.add(familyupdate)
-    db.commit()
-    db.refresh(familyupdate)
-    
-    return familyupdate
-
-
-def update_product(db: Session, productupdate : ProductCreate) -> products | None:
-    db.add(productupdate)
-    db.commit()
-    db.refresh(productupdate)
-    return productupdate
 
 def update_entity(entityupdate, db: Session):
     db.add(entityupdate)
