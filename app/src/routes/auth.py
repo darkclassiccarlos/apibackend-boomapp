@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter, Response, Depends, HTTPException, Request, status,Header
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
@@ -130,15 +130,12 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
 async def validate_token(token: str = Header(None), db = Depends(get_db)):
     try:
         payload = decode_jwt_token(token)
-        #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload)
         if payload:
-            expiration_time = datetime.now()
-        else:
             expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
-
+        else:
+            return JSONResponse(content={"errors": "El token ha expirado"}, status_code=401)
         if datetime.utcnow() > expiration_time:
-            raise HTTPException(status_code=400, detail="El token ha expirado")
+            return JSONResponse(content={"errors": "El token ha expirado"}, status_code=401)
         else:
             rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
             response = {
@@ -148,5 +145,7 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
             return response
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="El token ha expirado")
-    except jwt.DecodeError:
-        raise HTTPException(status_code=400, detail="Token inválido")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token no válido")
+    response = await call_next(request)
+    return response
