@@ -209,18 +209,38 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
 
 # Endpoint para crear una configuración de diseño
 @router.post("/save_configuration_designs/")
-def save_configuration_designs(configurations: DesignsConfigurations, db = Depends(get_db)):
+def save_configuration_designs(request: Request, configurations: DesignsConfigurations, db = Depends(get_db)):
     try:
-        configurationsdb = designsconfigurations(business_id= configurations.business_id,
-                            user_id=configurations.user_id,
-                            main_color=configurations.main_color,
-                            secondary_color=configurations.secondary_color,
-                            cover_image_filename=configurations.cover_image_filename,
-                            logo_filename=configurations.logo_filename)
-        db.add(configurationsdb)
-        db.commit()
-        db.refresh(configurationsdb)
-        return { "success": True,"message": "configuracion creado","family_id": configurationsdb.id}
+
+        configurationdb = db.query(designsconfigurations).filter(designsconfigurations.business_id == configurations.business_id, designsconfigurations.user_id == configurations.user_id).first()
+        if configurationdb:
+            configurationdb.main_color = configurations.main_color
+            configurationdb.secondary_color = configurations.secondary_color
+            configurationdb.cover_image_filename = configurations.cover_image_filename
+            configurationdb.logo_filename = configurations.logo_filename
+            updated_entity = update_entity(configurationdb, db=db)
+            response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "configuracion actualizada",
+                        "entity_id": updated_entity.id
+                    }
+            
+        else:
+            configurationsdb = designsconfigurations(business_id= configurations.business_id,
+                                user_id=configurations.user_id,
+                                main_color=configurations.main_color,
+                                secondary_color=configurations.secondary_color,
+                                cover_image_filename=configurations.cover_image_filename,
+                                logo_filename=configurations.logo_filename)
+            db.add(configurationsdb)
+            db.commit()
+            db.refresh(configurationsdb)
+            response = { 
+                            "success": True,
+                            "message": "configuracion creado",
+                            "entity_id": configurationsdb.id
+                        }
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
         
