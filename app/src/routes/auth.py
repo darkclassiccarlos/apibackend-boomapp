@@ -55,10 +55,10 @@ async def login(request: Request,
             token = create_jwt_token(user)
             return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
         else: 
-            raise HTTPException(status_code=401, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
+            return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=404, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
+        return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
 
 @router.post("/logout")
 def logout(db: Session = Depends(get_db)):
@@ -90,7 +90,7 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail="Unkwon error")
+        return JSONResponse(content={"error":"Usuario no registrado"}, status_code=401)
 
 @router.post("/forgot_pass")
 def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
@@ -133,9 +133,9 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
         if payload:
             expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
         else:
-            return JSONResponse(content={"errors": "El token ha expirado"}, status_code=401)
+            return JSONResponse(content={"success":False, "error":"El token ha expirado"}, status_code=401)
         if datetime.utcnow() > expiration_time:
-            return JSONResponse(content={"errors": "El token ha expirado"}, status_code=401)
+            return JSONResponse(content={"success":False, "error":"El token ha expirado"}, status_code=401)
         else:
             rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
             response = {
