@@ -105,20 +105,12 @@ def enviar_correo(destinatario, asunto, mensaje):
 
     servidor_smtp.quit()
 
-def update_familys(db: Session, familyupdate : FamilyCreateBase) -> familys | None:
-    db.add(familyupdate)
-    db.commit()
-    db.refresh(familyupdate)
-    
-    return familyupdate
 
-
-def update_product(db: Session, productupdate : ProductCreate) -> products | None:
-    db.add(productupdate)
+def update_entity(entityupdate, db: Session):
+    db.add(entityupdate)
     db.commit()
-    db.refresh(productupdate)
-    print(productupdate.as_dict())
-    return productupdate
+    db.refresh(entityupdate)
+    return entityupdate
 
 
 def remove_products_familys(db: Session, familia_id: int):
@@ -161,5 +153,5 @@ def create_business_qr(data):
     return img_str
 
 def create_website(data):
-    response = f"{data}boom.com.co"
+    response = f"{data}.boom.com.co"
     return response

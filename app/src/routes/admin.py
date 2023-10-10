@@ -1,20 +1,39 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Response, Depends, HTTPException, Request, status,Header
-from fastapi.responses import StreamingResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from passlib.hash import bcrypt  # Importa la biblioteca de hashing
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session
-from datetime import datetime,timedelta
-import jwt
+from fastapi import (
+    APIRouter,  
+    Depends, 
+    HTTPException, 
+    Request, 
+)
 from sqlalchemy import select, join
 
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token,update_familys,update_product,remove_products_familys,remove_products)
+from ..dependencies import (
+    remove_products_familys,
+    remove_products,
+    create_business_qr,
+    create_website,
+    update_entity,
+)
 from ..db.database import get_db
-from ..db.db_models import users, roluser, passwordRecoveryRequest,familys,products,familyproducts,business,designsconfigurations
-from ..db.models import UserBase,UserBaseCatalog,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword,FamilyCreateBase,ProductCreate,BusinessSave,DesignsConfigurations
-from ..db import users_actions
+from ..db.db_models import (
+    users,
+    familys,
+    products,
+    familyproducts,
+    business,
+    designsconfigurations
+)
+from ..db.models import (
+    UserBaseCatalog, 
+    FamilyproductsBase,
+    FamilysBase,
+    ProductsBase,
+    ProductCreate,
+    BusinessSave,
+    DesignsConfigurations
+)
+
 
 
 router = APIRouter(
@@ -83,7 +102,7 @@ async def create_family(request: Request, family: FamilysBase, db = Depends(get_
             familydb.isactive = family.isactive
             familydb.name = family.name
             familydb.user_id = family.user_id
-            updated_familys = update_familys(db=db, familyupdate=familydb)
+            updated_familys = update_entity(familydb, db=db)
             response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                         "message": "familia actualizada",
@@ -116,7 +135,7 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
             productdb.name = product.name
             productdb.namefile = product.namefile
             productdb.price = product.price
-            updated_product = update_product(db=db, productupdate= productdb)
+            updated_product = update_entity(productdb, db=db)
             response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                         "message": "producto actualizado",
@@ -148,21 +167,43 @@ async def create_product(request: Request, product: ProductCreate, db = Depends(
 def save_business(request: Request, businessObject: BusinessSave, db = Depends(get_db)):
     try:
         website = create_website(businessObject.name)
-        businessdb = business(name=businessObject.name,
-                            adress=businessObject.adress,
-                            telephone=businessObject.telephone,
-                            email=businessObject.email,
-                            description=businessObject.description,
-                            category=businessObject.category,
-                            website=website,
-                            qrpicture=create_business_qr(website),
-                            users_id=businessObject.users_id)
-        db.add(businessdb)
-        db.commit()
-        db.refresh(business)
-        return { "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+
+
+        businessdb = db.query(business).filter(business.id == businessObject.id).first()
+        if businessdb:
+            businessdb.name = businessObject.name
+            businessdb.adress = businessObject.adress
+            businessdb.telephone = businessObject.telephone
+            businessdb.email = businessObject.email
+            businessdb.description = businessObject.description
+            businessdb.category = businessObject.category
+            updated_entity = update_entity(businessdb, db=db)
+            response = {
+                        "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+                        "message": "negocio actualizado",
+                        "entity_id": updated_entity.id
+                    }
+            
+        else:
+
+            
+            businessdb = business(name=businessObject.name,
+                                adress=businessObject.adress,
+                                telephone=businessObject.telephone,
+                                email=businessObject.email,
+                                description=businessObject.description,
+                                category=businessObject.category,
+                                website=website,
+                                qrpicture=create_business_qr(website),
+                                users_id=businessObject.users_id)
+            db.add(businessdb)
+            db.commit()
+            response = {    "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
                             "message": "Negocio creado",
-                            "family_id": businessdb.id}
+                            "entity_id": businessdb.id
+                        }
+            
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
