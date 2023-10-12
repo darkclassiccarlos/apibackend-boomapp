@@ -34,8 +34,6 @@ from ..db.models import (
     DesignsConfigurations
 )
 
-
-
 router = APIRouter(
     prefix="/admin",
     tags=['admin']
@@ -172,11 +170,18 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
         businessdb = db.query(business).filter(business.id == businessObject.id).first()
         if businessdb:
             businessdb.name = businessObject.name
-            businessdb.adress = businessObject.adress
+            businessdb.address = businessObject.address
             businessdb.telephone = businessObject.telephone
             businessdb.email = businessObject.email
             businessdb.description = businessObject.description
             businessdb.category = businessObject.category
+            businessdb.city = businessObject.city
+            businessdb.state = businessObject.state
+            businessdb.country = businessObject.country
+            businessdb.whatsapp = businessObject.whatsapp
+            businessdb.facebook = businessObject.facebook
+            businessdb.instagram = businessObject.instagram
+
             updated_entity = update_entity(businessdb, db=db)
             response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
@@ -188,13 +193,19 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
 
             
             businessdb = business(name=businessObject.name,
-                                adress=businessObject.adress,
+                                address=businessObject.address,
                                 telephone=businessObject.telephone,
                                 email=businessObject.email,
                                 description=businessObject.description,
                                 category=businessObject.category,
-                                website=website,
+                                subdomain=website,
                                 qrpicture=create_business_qr(website),
+                                city = businessObject.city,
+                                state = businessObject.state,
+                                country = businessObject.country,
+                                whatsapp = businessObject.whatsapp,
+                                facebook = businessObject.facebook,
+                                instagram = businessObject.instagram,
                                 users_id=businessObject.users_id)
             db.add(businessdb)
             db.commit()
@@ -204,6 +215,55 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
                         }
             
         return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@router.get("/business_data/")
+async def get_business_data(email: str, db = Depends(get_db)):
+    try:
+        stmt = (
+            select(
+                business.name,
+                business.address,
+                business.telephone,
+                business.email,
+                business.description,
+                business.category,
+                business.subdomain,
+                business.qrpicture,
+                business.city,
+                business.state,
+                business.country,
+                business.whatsapp,
+                business.facebook,
+                business.instagram
+            )
+            .join(users, users.id == business.users_id)
+            .where(users.email == email)
+        )
+        result = db.execute(stmt)
+        business_data = []
+        for row in result:
+            data_point = {
+                "name": row.name,
+                "address": row.address,
+                "telephone": row.telephone,
+                "email": row.email,
+                "description": row.description,
+                "category": row.category,
+                "subdomain": row.subdomain,
+                "qrpicture": row.qrpicture,
+                "city": row.city,
+                "state": row.state,
+                "country": row.country,
+                "whatsapp": row.whatsapp,
+                "facebook": row.facebook,
+                "instagram": row.instagram
+            }
+            business_data.append(data_point)
+
+        return {"user": email, "data": business_data} 
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
@@ -218,6 +278,7 @@ def save_configuration_designs(request: Request, configurations: DesignsConfigur
             configurationdb.secondary_color = configurations.secondary_color
             configurationdb.cover_image_filename = configurations.cover_image_filename
             configurationdb.logo_filename = configurations.logo_filename
+            configurationdb.button_name = configurations.button_name
             updated_entity = update_entity(configurationdb, db=db)
             response = {
                         "success": True,  # Puedes utilizar otro campo si tienes el nombre en la base de datos
@@ -231,7 +292,8 @@ def save_configuration_designs(request: Request, configurations: DesignsConfigur
                                 main_color=configurations.main_color,
                                 secondary_color=configurations.secondary_color,
                                 cover_image_filename=configurations.cover_image_filename,
-                                logo_filename=configurations.logo_filename)
+                                logo_filename=configurations.logo_filename,
+                                button_name=configurations.button_name)
             db.add(configurationsdb)
             db.commit()
             db.refresh(configurationsdb)
@@ -243,7 +305,38 @@ def save_configuration_designs(request: Request, configurations: DesignsConfigur
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-        
+
+@router.get("/configuration_designs_data/")
+async def get_designs_data(email: str, db = Depends(get_db)):
+    try:
+        stmt = (
+            select(
+                designsconfigurations.main_color,
+                designsconfigurations.secondary_color,
+                designsconfigurations.cover_image_filename,
+                designsconfigurations.logo_filename,
+                designsconfigurations.button_name
+            )
+            .join(users, users.id == designsconfigurations.user_id)
+            .join(business, designsconfigurations.business_id == business.id)
+            .where(users.email == email)
+        )
+        result = db.execute(stmt)
+        designs_data = []
+        for row in result:
+            data_point = {
+                "main_color": row.main_color,
+                "secondary_color": row.secondary_color,
+                "cover_image_filename": row.cover_image_filename,
+                "logo_filename": row.logo_filename,
+                "button_name": row.button_name
+            }
+            designs_data.append(data_point)
+
+        return {"user": email, "data": designs_data} 
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @router.delete("/rm_family/{familia_id}")
 async def remove_family(familia_id: int, db = Depends(get_db)):
