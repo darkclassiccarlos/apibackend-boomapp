@@ -69,11 +69,17 @@ class PasswordRecovery(BaseModel):
 class BusinessSave(BaseModel):
     id: Optional[int]
     name : str
-    adress : str
+    address : str
     telephone : str
     email : str
     description : str
     category : str
+    city : str
+    state : str
+    country : str
+    whatsapp : str
+    facebook : str
+    instagram : str
     users_id : Optional[int]
 
 class DesignsConfigurations(BaseModel):
@@ -83,3 +89,4 @@ class DesignsConfigurations(BaseModel):
     secondary_color : str
     cover_image_filename : str
     logo_filename : str
+    button_name : str
