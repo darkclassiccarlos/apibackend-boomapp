@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter, Response, Depends, HTTPException, Request, status,Header
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,10 +55,10 @@ async def login(request: Request,
             token = create_jwt_token(user)
             return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
         else: 
-            raise HTTPException(status_code=401, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
+            return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=404, detail="Correo electrónico o contraseña incorrectos, inténtelo de nuevo.")
+        return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
 
 @router.post("/logout")
 def logout(db: Session = Depends(get_db)):
@@ -90,7 +90,7 @@ def register_user(userdb: UserBase, db = Depends(get_db)):
         return {"access_token": token, "token_type": "bearer"}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail="Unkwon error")
+        return JSONResponse(content={"error":"Usuario no registrado"}, status_code=401)
 
 @router.post("/forgot_pass")
 def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
@@ -126,19 +126,16 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="No se pudo enviar el token")
     
 
-@router.post("/validate_recovery_password")
-async def validate_recovery_password(token: str = Header(None), db = Depends(get_db)):
+@router.post("/validate_token")
+async def validate_token(token: str = Header(None), db = Depends(get_db)):
     try:
         payload = decode_jwt_token(token)
-        #payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload)
         if payload:
-            expiration_time = datetime.now()
-        else:
             expiration_time = datetime.utcfromtimestamp(payload.get("exp", 0))
-
+        else:
+            return JSONResponse(content={"success":False, "error":"El token ha expirado"}, status_code=401)
         if datetime.utcnow() > expiration_time:
-            raise HTTPException(status_code=400, detail="El token ha expirado")
+            return JSONResponse(content={"success":False, "error":"El token ha expirado"}, status_code=401)
         else:
             rquest_recovery = db.query(passwordRecoveryRequest).filter(passwordRecoveryRequest.token == recoveryPassword).first()
             response = {
@@ -148,5 +145,7 @@ async def validate_recovery_password(token: str = Header(None), db = Depends(get
             return response
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="El token ha expirado")
-    except jwt.DecodeError:
-        raise HTTPException(status_code=400, detail="Token inválido")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token no válido")
+    response = await call_next(request)
+    return response
