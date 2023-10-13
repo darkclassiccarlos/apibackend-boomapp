@@ -78,6 +78,7 @@ class business(Base):
     name = Column(String(255), index=True)
     address = Column(String(255))
     telephone = Column(String(20))
+    attributes = Column(Text)
     email = Column(String(255))
     description = Column(Text)
     category = Column(String(50))

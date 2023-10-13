@@ -71,6 +71,7 @@ class BusinessSave(BaseModel):
     name : str
     address : str
     telephone : str
+    attributes: Optional[str]
     email : str
     description : str
     category : str
@@ -90,3 +91,8 @@ class DesignsConfigurations(BaseModel):
     cover_image_filename : str
     logo_filename : str
     button_name : str
+
+class PayloadUploadFile(BaseModel):
+    base64: str
+    folder: str
+    fileName: str

@@ -31,7 +31,8 @@ from ..db.models import (
     ProductsBase,
     ProductCreate,
     BusinessSave,
-    DesignsConfigurations
+    DesignsConfigurations,
+    PayloadUploadFile
 )
 
 router = APIRouter(
@@ -172,6 +173,7 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
             businessdb.name = businessObject.name
             businessdb.address = businessObject.address
             businessdb.telephone = businessObject.telephone
+            businessdb.attributes = businessObject.attributes
             businessdb.email = businessObject.email
             businessdb.description = businessObject.description
             businessdb.category = businessObject.category
@@ -195,6 +197,7 @@ def save_business(request: Request, businessObject: BusinessSave, db = Depends(g
             businessdb = business(name=businessObject.name,
                                 address=businessObject.address,
                                 telephone=businessObject.telephone,
+                                attributes=businessObject.attributes,
                                 email=businessObject.email,
                                 description=businessObject.description,
                                 category=businessObject.category,
@@ -226,6 +229,7 @@ async def get_business_data(email: str, db = Depends(get_db)):
                 business.name,
                 business.address,
                 business.telephone,
+                business.attributes,
                 business.email,
                 business.description,
                 business.category,
@@ -248,6 +252,7 @@ async def get_business_data(email: str, db = Depends(get_db)):
                 "name": row.name,
                 "address": row.address,
                 "telephone": row.telephone,
+                "attributes": row.attributes,
                 "email": row.email,
                 "description": row.description,
                 "category": row.category,
@@ -363,3 +368,134 @@ async def remove_family(product_id: int, db = Depends(get_db)):
             "family_id": productdb.id
             }
 
+### Acciones FTP
+#subir archivo 
+@router.post("/upload_file_base")
+async def upload_file_base(payload: PayloadUploadFile):
+    try:
+        # Crear una conexión FTP
+        with FTP(ftp_host) as ftp:
+            # Iniciar sesión con las credenciales FTP
+            ftp.login(user=ftp_usuario, passwd=ftp_contrasena)
+
+            # Verificar si el directorio ya existe
+            if payload.folder not in ftp.nlst():
+                # Si el directorio no existe, créalo
+                ftp.mkd(payload.folder)
+
+            # Cambiar al directorio de destino en el servidor externo
+            ftp.cwd(payload.folder)
+
+            # Decodificar la cadena Base64 en datos binarios
+            datos_binarios = base64.b64decode(payload.base64)
+
+            # Leer el contenido del archivo en partes pequeñas y cargarlo por FTP
+            with BytesIO(datos_binarios) as archivo:
+                ftp.storbinary(f"STOR {payload.fileName}", archivo)
+
+        return {"mensaje": f"El archivo '{payload.fileName}' se ha subido exitosamente al servidor FTP."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
+
+
+@router.get("/download_file/")
+async def download_file(nombre_archivo: str, folder: str):
+    try:
+        # Crear una conexión FTP
+        with FTP(ftp_host) as ftp:
+            # Iniciar sesión con las credenciales FTP
+            ftp.login(user=ftp_usuario, passwd=ftp_contrasena)
+
+            ftp.cwd(folder)
+
+            # Descargar el archivo desde el servidor FTP
+            with open(nombre_archivo, "wb") as archivo_local:
+                ftp.retrbinary(f"RETR {nombre_archivo}", archivo_local.write)
+            
+            # Leer el contenido del archivo descargado
+            with open(nombre_archivo, "rb") as archivo_local:
+                contenido = archivo_local.read()
+
+        imagen = Image.open(BytesIO(contenido))
+        imagen_base64 = base64.b64encode(contenido).decode("utf-8")
+
+        # Eliminar el archivo después de leerlo
+        os.remove(nombre_archivo)
+
+        imagen_json = {
+            "name": nombre_archivo,
+            "type": Image.MIME[imagen.format],
+            "data": imagen_base64
+        }
+
+        return imagen_json
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al descargar el archivo: {str(e)}")
+
+@router.post("/remove_directory/")
+async def remove_directory(nombre_directorio: str):
+    try:
+        # Crear una conexión FTP
+        with FTP(ftp_host) as ftp:
+            # Iniciar sesión con las credenciales FTP
+            ftp.login(user=ftp_usuario, passwd=ftp_contrasena)
+
+            # Cambiar al directorio que se va a eliminar
+            ftp.cwd(nombre_directorio)
+
+            # Listar archivos y subdirectorios en el directorio
+            lista_archivos = []
+            lista_new = []
+
+            ftp.retrlines("LIST", lista_archivos.append)
+            for linea in lista_archivos:
+                if not (linea.startswith("d") and (linea.endswith(" .") or linea.endswith(" .."))):
+                    # Si la línea no comienza con "d" o no termina con " ." o " ..", la agregamos
+                    nombre_item = linea.split()[-1]
+                    lista_new.append(nombre_item)                         
+
+            # Eliminar archivos en el directorio
+            for nombre_archivo in lista_new:
+                ftp.delete(nombre_archivo)
+
+            # Regresar al directorio padre
+            ftp.cwd("..")
+
+            # Eliminar el directorio actual
+            ftp.rmd(nombre_directorio)
+
+        return {"mensaje": f"Directorio '{nombre_directorio}' y su contenido eliminados exitosamente en el servidor FTP."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar directorio y su contenido: {str(e)}")
+
+
+@router.post("/build")
+def build(name:str, email:str, user_id: int):
+
+    ##
+    #Desplegar subdominio en hosting
+    ##
+    busines_data = get.get_business_data()
+    design_data = get_designs_data()
+
+    response_data = {
+        #BusinesData
+        "address":busines_data.address,
+        "description":busines_data.description,
+        "facebook":busines_data.facebook,
+        "instagram":busines_data.instagram,
+        "name":busines_data.name,
+        "telephone":busines_data.telephone,
+        "users_id":busines_data.users_id,
+        "whatsapp":busines_data.whatsapp,
+        #designData
+        "business_id":design_data.business_id,
+        "button_name":design_data.button_name,
+        "cover_image_filename":design_data.cover_image_filename,
+        "logo_filename":design_data.logo_filename,
+        "main_color":design_data.main_color,
+        "secondary_color":design_data.secondary_color,
+        "user_id":design_data.user_id
+    }
+
+    return response_data
