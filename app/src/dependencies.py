@@ -146,6 +146,7 @@ def remove_products(db: Session, product_id: int):
         return {"No existe elementos para borrar"}
 
 def create_business_qr(data):
+    data = f"{data}.boomtel.com.co"
     buffered = BytesIO()
     qr = segno.make_qr(data)
     qr.save(buffered, kind= "png", scale=9, border=1)
@@ -153,5 +154,5 @@ def create_business_qr(data):
     return img_str
 
 def create_website(data):
-    response = f"{data}.boom.com.co"
+    response = data.replace(" ", "").lower()
     return response
