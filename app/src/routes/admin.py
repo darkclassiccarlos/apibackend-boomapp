@@ -5,7 +5,7 @@ from fastapi import (
     HTTPException, 
     Request, 
 )
-from sqlalchemy import select, join
+from sqlalchemy import select, join, and_
 
 #local imports
 from ..dependencies import (
@@ -470,32 +470,87 @@ async def remove_directory(nombre_directorio: str):
 
 
 @router.post("/build")
-def build(name:str, email:str, user_id: int):
+async def build(subdomain: str, db = Depends(get_db)):
 
-    ##
-    #Desplegar subdominio en hosting
-    ##
-    busines_data = get.get_business_data()
-    design_data = get_designs_data()
+    try:
+        stmt = (
+            select(
+                business.users_id,
+                business.name,
+                business.address,
+                business.telephone,
+                business.attributes,
+                business.email,
+                business.description,
+                business.category,
+                business.subdomain,
+                business.qrpicture,
+                business.city,
+                business.state,
+                business.country,
+                business.whatsapp,
+                business.facebook,
+                business.instagram,
+                designsconfigurations.main_color,
+                designsconfigurations.secondary_color,
+                designsconfigurations.cover_image_filename,
+                designsconfigurations.logo_filename,
+                designsconfigurations.button_name
+            )
+            .join(designsconfigurations, and_(business.users_id == designsconfigurations.user_id, business.id == designsconfigurations.business_id))
+            .where(business.subdomain == subdomain)
+        )
+        result = db.execute(stmt)
+        
+        response_obj = {} 
+        for row in result:
+            user_id = row.users_id
+            data_point = {
+                "name": row.name,
+                "address": row.address,
+                "telephone": row.telephone,
+                "attributes": row.attributes,
+                "email": row.email,
+                "description": row.description,
+                "category": row.category,
+                "subdomain": row.subdomain,
+                "qrpicture": row.qrpicture,
+                "city": row.city,
+                "state": row.state,
+                "country": row.country,
+                "whatsapp": row.whatsapp,
+                "facebook": row.facebook,
+                "instagram": row.instagram,
+                "main_color": row.main_color,
+                "secondary_color": row.secondary_color,
+                "cover_image_filename": row.cover_image_filename,
+                "logo_filename": row.logo_filename,
+                "button_name": row.button_name
+            }
+            response_obj["build"] = data_point
 
-    response_data = {
-        #BusinesData
-        "address":busines_data.address,
-        "description":busines_data.description,
-        "facebook":busines_data.facebook,
-        "instagram":busines_data.instagram,
-        "name":busines_data.name,
-        "telephone":busines_data.telephone,
-        "users_id":busines_data.users_id,
-        "whatsapp":busines_data.whatsapp,
-        #designData
-        "business_id":design_data.business_id,
-        "button_name":design_data.button_name,
-        "cover_image_filename":design_data.cover_image_filename,
-        "logo_filename":design_data.logo_filename,
-        "main_color":design_data.main_color,
-        "secondary_color":design_data.secondary_color,
-        "user_id":design_data.user_id
-    }
+        subquery = (
+            db.query(
+                familys.user_id,
+                products.namefile.label("namefile")
+            )
+            .select_from(familys)
+            .join(familyproducts, familys.id == familyproducts.family_id)
+            .join(products, familyproducts.product_id == products.id)
+            .filter(and_(familys.user_id == user_id, products.namefile.isnot(None), products.namefile != ''))
+            .subquery()
+        )
 
-    return response_data
+        results = (
+            db.query(subquery.c.user_id, subquery.c.namefile)
+            .filter(subquery.c.namefile.isnot(None))
+            .all()
+        )
+        response_obj['multimedia'] = []
+        for mul in results:
+            response_obj['multimedia'].append(mul.namefile)
+    
+        return {"subdomain": subdomain, "data": response_obj} 
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
