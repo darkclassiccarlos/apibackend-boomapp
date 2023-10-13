@@ -482,6 +482,8 @@ def build(name:str, email:str, user_id: int):
         #BusinesData
         "address":busines_data.address,
         "description":busines_data.description,
+        "category":busines_data.category,
+        "attributes":busines_data.attributes,
         "facebook":busines_data.facebook,
         "instagram":busines_data.instagram,
         "name":busines_data.name,
