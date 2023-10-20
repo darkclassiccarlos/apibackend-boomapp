@@ -37,3 +37,5 @@ websockets==11.0.3
 mysql-connector-python==8.0.15
 PyJWT==2.8.0
 segno==1.5.2
+Pillow==10.1.0
+pyftpdlib==1.5.8
