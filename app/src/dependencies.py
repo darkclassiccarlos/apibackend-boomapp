@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import base64
 from io import BytesIO
 import segno
+import os
 
 from typing import Dict, Optional
 import mysql.connector
@@ -21,12 +22,17 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from dotenv import load_dotenv
+
+dotenv_path = os.path.join(os.path.dirname(__file__), "../config/dev.env")
+load_dotenv(dotenv_path)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # Clave secreta para firmar el token (deberías guardarse esto de manera segura per ya vemos)
-SECRET_KEY = "tu_clave_secreta"
+#SECRET_KEY = "tu_clave_secreta"
+SECRET_KEY = os.getenv("SECRET_KEY")
 # Tiempo de expiración del token (en segundos)
 TOKEN_EXPIRATION = timedelta(minutes=15)
 
@@ -49,6 +55,7 @@ def create_jwt_token(data):
         "exp": expiration,
         **data
     }
+    print(SECRET_KEY)
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def decode_jwt_token(data):

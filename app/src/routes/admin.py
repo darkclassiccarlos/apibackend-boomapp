@@ -4,8 +4,15 @@ from fastapi import (
     Depends, 
     HTTPException, 
     Request, 
+    UploadFile
 )
 from sqlalchemy import select, join, and_
+import os
+from dotenv import load_dotenv
+from ftplib import FTP
+from PIL import Image
+from io import BytesIO
+import base64
 
 #local imports
 from ..dependencies import (
@@ -34,11 +41,18 @@ from ..db.models import (
     DesignsConfigurations,
     PayloadUploadFile
 )
+dotenv_path = os.path.join(os.path.dirname(__file__), "../../config/prod.env")
+load_dotenv(dotenv_path)
+
+ftp_host =os.getenv("FTP_HOST")
+ftp_usuario =os.getenv("FTP_USER")
+ftp_contrasena =os.getenv("FTP_PASS")
 
 router = APIRouter(
     prefix="/admin",
     tags=['admin']
 )
+
 
 @router.get("/user_catalog/")
 async def get_user_catalog(email: str, db = Depends(get_db)):
@@ -226,6 +240,7 @@ async def get_business_data(email: str, db = Depends(get_db)):
     try:
         stmt = (
             select(
+                business.id,
                 business.name,
                 business.address,
                 business.telephone,
@@ -249,6 +264,7 @@ async def get_business_data(email: str, db = Depends(get_db)):
         business_data = []
         for row in result:
             data_point = {
+                "business_id": row.id,
                 "name": row.name,
                 "address": row.address,
                 "telephone": row.telephone,
@@ -320,7 +336,8 @@ async def get_designs_data(email: str, db = Depends(get_db)):
                 designsconfigurations.secondary_color,
                 designsconfigurations.cover_image_filename,
                 designsconfigurations.logo_filename,
-                designsconfigurations.button_name
+                designsconfigurations.button_name,
+                business.id
             )
             .join(users, users.id == designsconfigurations.user_id)
             .join(business, designsconfigurations.business_id == business.id)
@@ -334,7 +351,8 @@ async def get_designs_data(email: str, db = Depends(get_db)):
                 "secondary_color": row.secondary_color,
                 "cover_image_filename": row.cover_image_filename,
                 "logo_filename": row.logo_filename,
-                "button_name": row.button_name
+                "button_name": row.button_name,
+                "business_id": row.id
             }
             designs_data.append(data_point)
 
@@ -370,30 +388,27 @@ async def remove_family(product_id: int, db = Depends(get_db)):
 
 ### Acciones FTP
 #subir archivo 
-@router.post("/upload_file_base")
-async def upload_file_base(payload: PayloadUploadFile):
+@router.post("/upload_file")
+async def upload_file(file: UploadFile, folder: str):
     try:
-        # Crear una conexión FTP
+    # Crear una conexión FTP
         with FTP(ftp_host) as ftp:
             # Iniciar sesión con las credenciales FTP
             ftp.login(user=ftp_usuario, passwd=ftp_contrasena)
 
             # Verificar si el directorio ya existe
-            if payload.folder not in ftp.nlst():
+            if folder not in ftp.nlst():
                 # Si el directorio no existe, créalo
-                ftp.mkd(payload.folder)
+                ftp.mkd(folder)
 
             # Cambiar al directorio de destino en el servidor externo
-            ftp.cwd(payload.folder)
-
-            # Decodificar la cadena Base64 en datos binarios
-            datos_binarios = base64.b64decode(payload.base64)
+            ftp.cwd(folder)
 
             # Leer el contenido del archivo en partes pequeñas y cargarlo por FTP
-            with BytesIO(datos_binarios) as archivo:
-                ftp.storbinary(f"STOR {payload.fileName}", archivo)
+            with file.file as archivo:
+                ftp.storbinary(f"STOR {file.filename}", archivo)
 
-        return {"mensaje": f"El archivo '{payload.fileName}' se ha subido exitosamente al servidor FTP."}
+        return {"mensaje": f"El archivo '{file.filename}' se ha subido exitosamente al servidor FTP."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir el archivo: {str(e)}")
 
