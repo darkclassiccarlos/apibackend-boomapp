@@ -14,6 +14,7 @@ class users(Base):
     password = Column(String(255),nullable=True)
     email = Column(String(100), nullable=False)
     rol_id = Column(Integer, default=2)
+    is_active = Column(Boolean)
     def as_dict(self):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 

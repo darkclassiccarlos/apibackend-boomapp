@@ -6,7 +6,7 @@ from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user)
+# from ..dependencies import (cryptpass,create_jwt_token,get_current_user)
 from ..db.database import get_db
 from ..db.db_models import users, roluser
 from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,UserBaseUpdate

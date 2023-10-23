@@ -6,13 +6,26 @@ from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from datetime import datetime,timedelta
+from typing import Annotated
 import jwt
 
+from src.settings import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+)
+
 #local imports
-from ..dependencies import (cryptpass,create_jwt_token,get_current_user,enviar_correo,decode_jwt_token)
+from ..dependencies import (
+    authenticate_user,
+    create_access_token, 
+    # cryptpass,create_jwt_token,
+    # get_current_user,
+    enviar_correo,
+    get_current_active_user,
+    # decode_jwt_token
+    )
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest
-from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword
+from ..db.models import Token, UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,emailRequest,PasswordRecovery,recoveryPassword
 from ..db import users_actions
 
 
@@ -59,6 +72,31 @@ async def login(request: Request,
     except Exception as e:
         print(e)
         return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
+
+# ======================================================================================================================
+
+@router.post("/token", response_model=Token)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Session = Depends(get_db) 
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+
+    # print(user)
+    # # return {"access_token": "access_token", "token_type": "bearer"}
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["email"]}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# ======================================================================================================================
 
 @router.post("/logout")
 def logout(db: Session = Depends(get_db)):
@@ -147,5 +185,3 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
         raise HTTPException(status_code=400, detail="El token ha expirado")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token no válido")
-    response = await call_next(request)
-    return response

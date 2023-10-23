@@ -475,7 +475,7 @@ def build(name:str, email:str, user_id: int):
     ##
     #Desplegar subdominio en hosting
     ##
-    busines_data = get.get_business_data()
+    busines_data = get_business_data()
     design_data = get_designs_data()
 
     response_data = {
