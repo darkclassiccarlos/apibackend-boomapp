@@ -5,6 +5,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.hash import bcrypt  # Importa la biblioteca de hashing
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+
 #local imports
 from ..dependencies import (cryptpass,create_jwt_token,get_current_user)
 from ..db.database import get_db
@@ -12,10 +14,17 @@ from ..db.db_models import users, roluser
 from ..db.models import UserBase,RolBase,FamilyproductsBase,FamilysBase,ProductsBase,CustomOAuth2PasswordRequestForm,UserBaseUpdate
 from ..db import users_actions
 
+pwd_cxt = CryptContext(schemes='bcrypt')
+
 router = APIRouter(
     prefix="/users",
     tags=['users']
 )
+class Hash():
+    def bcrypt(password:str):
+        return pwd_cxt.hash(password)
+    def verify(hased_password, plain_password):
+        return pwd_cxt.verify(plain_password, hased_password)
 
 @router.get("/check")
 def root():
@@ -43,7 +52,7 @@ async def update_user(request: Request, response:Response, id:int, user_update: 
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
         formdata = await request.form()
         edit_user.name = user_update.fullName
-        edit_user.email = user_update.email
+        edit_user.password = Hash.bcrypt(user_update.password)
         edit_user.rol_id = user_update.rol_id
         updated_user = users_actions.update_user(db=db, user=edit_user)
         return {f"updated_user"}

@@ -17,7 +17,7 @@ class UserBaseCatalog(BaseModel):
 
 class UserBaseUpdate(BaseModel):
     fullName : str
-    email : str
+    password: str
     rol_id: int 
 
 class RolBase(BaseModel):

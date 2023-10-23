@@ -55,55 +55,55 @@ router = APIRouter(
 
 
 @router.get("/user_catalog/")
-async def get_user_catalog(email: str, db = Depends(get_db)):
-    try:
-        user = UserBaseCatalog
-        family = FamilysBase
-        product = ProductsBase
-        family_product = FamilyproductsBase
-        stmt = (
-            select(
-                users.email,
-                familys.name.label('family'),
-                familys.id,
-                familyproducts.id, ### Campo nuevo
-                products.id,
-                products.name.label('name'),
-                products.namefile,
-                products.price
-            )
-            .select_from(
-                join(familys,familyproducts, familys.id == familyproducts.family_id,  isouter=True)
-                .join(products, familyproducts.product_id == products.id,  isouter=True)
-                .join(users, familys.user_id == users.id, isouter=True)
-            )
-            .where(users.email == email)
+async def get_user_catalog(user_id: int, db = Depends(get_db)):
+    # try:
+    user = UserBaseCatalog
+    family = FamilysBase
+    product = ProductsBase
+    family_product = FamilyproductsBase
+    stmt = (
+        select(
+            users.email,
+            familys.name.label('family'),
+            familys.id,
+            familyproducts.id, ### Campo nuevo
+            products.id,
+            products.name.label('name'),
+            products.namefile,
+            products.price
         )
-        result = db.execute(stmt)
-        catalog = {}
-        for row in result:
-            family_name = row[1],
-            if row[3]:
-                product_data = {
-                    "product_id": row[4],
-                    "name": row[5],
-                    "image": row[6],
-                    "price": row[7]
-                }
-            else:
-                product_data = None
-            
-            if family_name not in catalog:
-                catalog[family_name] = {"family": row[1],"family_id": row[2], "products": None if product_data is None else []}
-            
-            if product_data is not None:
-                catalog[family_name]["products"].append(product_data)
+        .select_from(
+            join(familys,familyproducts, familys.id == familyproducts.family_id,  isouter=True)
+            .join(products, familyproducts.product_id == products.id,  isouter=True)
+            .join(users, familys.user_id == users.id, isouter=True)
+        )
+        .where(users.id == user_id)
+    )
+    result = db.execute(stmt)
+    catalog = {}
+    for row in result:
+        family_name = row[1],
+        if row[3]:
+            product_data = {
+                "product_id": row[4],
+                "name": row[5],
+                "image": row[6],
+                "price": row[7]
+            }
+        else:
+            product_data = None
+        
+        if family_name not in catalog:
+            catalog[family_name] = {"family": row[1],"family_id": row[2], "products": None if product_data is None else []}
+        
+        if product_data is not None:
+            catalog[family_name]["products"].append(product_data)
 
-        user_data = {"user": email, "catalog": list(catalog.values())}
+    user_data = {"user": user_id, "catalog": list(catalog.values())}
 
-        return user_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    return user_data
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Endpoint para crear una familia de productos ( modificar, para hacerlo updateSave)
 @router.post("/families/")
@@ -521,6 +521,7 @@ async def build(subdomain: str, db = Depends(get_db)):
         for row in result:
             user_id = row.users_id
             data_point = {
+                "user_id":row.users_id,
                 "name": row.name,
                 "address": row.address,
                 "telephone": row.telephone,
