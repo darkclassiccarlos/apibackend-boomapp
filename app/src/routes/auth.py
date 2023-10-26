@@ -17,11 +17,11 @@ from src.settings import (
 from ..dependencies import (
     authenticate_user,
     create_access_token, 
-    # cryptpass,create_jwt_token,
+    cryptpass,create_jwt_token,
     # get_current_user,
     enviar_correo,
     get_current_active_user,
-    # decode_jwt_token
+    decode_jwt_token
     )
 from ..db.database import get_db
 from ..db.db_models import users, roluser, passwordRecoveryRequest
@@ -46,36 +46,36 @@ class LoginForm:
         self.password = form.get('password')
 
 # Ruta de inicio de sesión (Log In):
-@router.post("/login")
-async def login(request: Request,
-                response: Response,
-                form_data: CustomOAuth2PasswordRequestForm,
-                db: Session = Depends(get_db)):
-    try:
-        form = LoginForm(request)
-        await form.create_oauth_form()
-        user = users_actions.authenticate_user(db=db,
-                                            email=form_data.email,
-                                            password=form_data.password)
-        if user:
-            user=user.as_dict()
-            user = {
-                "name": user["name"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
-                "picture": f"assets/images/{user['picture']}.png",
-                "email": user["email"],
-                "user_id": user["id"]
-            }
-            token = create_jwt_token(user)
-            return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
-        else: 
-            return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
-    except Exception as e:
-        print(e)
-        return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
+# @router.post("/login")
+# async def login(request: Request,
+#                 response: Response,
+#                 form_data: CustomOAuth2PasswordRequestForm,
+#                 db: Session = Depends(get_db)):
+#     try:
+#         form = LoginForm(request)
+#         await form.create_oauth_form()
+#         user = users_actions.authenticate_user(db=db,
+#                                             email=form_data.email,
+#                                             password=form_data.password)
+#         if user:
+#             user=user.as_dict()
+#             user = {
+#                 "name": user["name"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
+#                 "picture": f"assets/images/{user['picture']}.png",
+#                 "email": user["email"],
+#                 "user_id": user["id"]
+#             }
+#             token = create_jwt_token(user)
+#             return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
+#         else: 
+#             return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
+#     except Exception as e:
+#         print(e)
+#         return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
 
 # ======================================================================================================================
 
-@router.post("/token", response_model=Token)
+@router.post("/login", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db) 
@@ -185,3 +185,7 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
         raise HTTPException(status_code=400, detail="El token ha expirado")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token no válido")
+
+@router.get("/reset_password")
+async def reset_password(auth = Depends(get_current_active_user)):
+    return {"message":"token validado"}
