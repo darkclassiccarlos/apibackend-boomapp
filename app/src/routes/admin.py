@@ -520,6 +520,7 @@ async def build(subdomain: str, db = Depends(get_db)):
         for row in result:
             user_id = row.users_id
             data_point = {
+                "user_id": row.users_id,
                 "name": row.name,
                 "address": row.address,
                 "telephone": row.telephone,

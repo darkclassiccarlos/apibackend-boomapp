@@ -34,7 +34,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-db = next(get_db())
+db = get_db()
 
 
 
@@ -149,8 +149,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
+def get_session_db(db: Session = db):
+    return db
+
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    global db
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -164,11 +166,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    try: 
-        user = get_user(db, username=token_data.username)
-    except mysql.connector.Error as err:
-        db = next(get_db())
-        user = get_user(db, username=token_data.username)
+    
+    db = get_session_db(db)
+    user = get_user(db, username=token_data.username)
     
     if user is None:
         raise credentials_exception
