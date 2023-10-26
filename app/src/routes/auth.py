@@ -52,6 +52,7 @@ async def login_for_access_token(
     db: Session = Depends(get_db) 
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
+    print(user)
     user.pop('password', None)
     
 
@@ -107,7 +108,8 @@ def forgot_pass(form_data: emailRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="El usuario no existe")    
     now = datetime.now()
     formatted_date_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    data = {"user_id": user_email.id,
+    data = {
+            "user_id": user_email.id,
             "date": formatted_date_time
             }
     token_recovery_password = create_jwt_token(data)

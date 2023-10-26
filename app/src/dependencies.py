@@ -33,12 +33,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-
-db = get_db()
-
-
-
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -116,6 +110,7 @@ def verify_password(plain_password, hashed_password):
 
 def get_user(db, username: str):
     user = db.query(
+        users.email.label("sub"),
         users.email,
         users.name,
         users.picture,
@@ -149,10 +144,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def get_session_db(db: Session = db):
-    return db
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -167,7 +159,6 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     except JWTError:
         raise credentials_exception
     
-    db = get_session_db(db)
     user = get_user(db, username=token_data.username)
     
     if user is None:
