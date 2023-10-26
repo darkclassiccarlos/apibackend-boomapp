@@ -53,8 +53,6 @@ async def login_for_access_token(
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
 
-    # print(user)
-    # # return {"access_token": "access_token", "token_type": "bearer"}
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
