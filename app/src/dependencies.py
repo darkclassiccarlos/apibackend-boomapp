@@ -150,6 +150,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    global db
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -163,7 +164,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(db, username=token_data.username)
+    try: 
+        user = get_user(db, username=token_data.username)
+    except mysql.connector.Error as err:
+        db = next(get_db())
+        user = get_user(db, username=token_data.username)
+    
     if user is None:
         raise credentials_exception
     return user

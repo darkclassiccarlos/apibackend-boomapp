@@ -157,3 +157,5 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
 @router.get("/desktop_test")
 def desktop_test(user: Annotated[str, Depends(get_current_active_user)]):
     return "prueba de escritorio"
+
+
