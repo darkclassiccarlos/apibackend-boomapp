@@ -185,3 +185,7 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
         raise HTTPException(status_code=400, detail="El token ha expirado")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token no válido")
+
+@router.get("/desktop_test")
+def desktop_test(user: Annotated[str, Depends(get_current_active_user)]):
+    return "prueba de escritorio"
