@@ -17,7 +17,7 @@ class UserBaseCatalog(BaseModel):
 
 class UserBaseUpdate(BaseModel):
     fullName : str
-    email : str
+    password: str
     rol_id: int 
 
 class RolBase(BaseModel):
@@ -69,11 +69,18 @@ class PasswordRecovery(BaseModel):
 class BusinessSave(BaseModel):
     id: Optional[int]
     name : str
-    adress : str
+    address : str
     telephone : str
+    attributes: Optional[str]
     email : str
     description : str
     category : str
+    city : str
+    state : str
+    country : str
+    whatsapp : str
+    facebook : str
+    instagram : str
     users_id : Optional[int]
 
 class DesignsConfigurations(BaseModel):
@@ -83,3 +90,18 @@ class DesignsConfigurations(BaseModel):
     secondary_color : str
     cover_image_filename : str
     logo_filename : str
+    button_name : str
+
+class PayloadUploadFile(BaseModel):
+    base64: str
+    folder: str
+    fileName: str
+
+# auth models
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: str | None = None
+

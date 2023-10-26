@@ -14,6 +14,7 @@ class users(Base):
     password = Column(String(255),nullable=True)
     email = Column(String(100), nullable=False)
     rol_id = Column(Integer, default=2)
+    is_active = Column(Boolean)
     def as_dict(self):
         return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
@@ -76,13 +77,20 @@ class business(Base):
     __tablename__ = "business"  # Reemplaza con el nombre de tu tabla
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), index=True)
-    adress = Column(String(255))
+    address = Column(String(255))
     telephone = Column(String(20))
+    attributes = Column(Text)
     email = Column(String(255))
     description = Column(Text)
     category = Column(String(50))
-    website = Column(String(255))
+    subdomain = Column(String(255))
     qrpicture = Column(Text)
+    city = Column(String(50))
+    state = Column(String(50))
+    country = Column(String(50))
+    whatsapp = Column(String(50))
+    facebook = Column(String(100))
+    instagram = Column(String(100))
     users_id = Column(Integer, ForeignKey("users.id"))
 
 class designsconfigurations(Base):
@@ -94,6 +102,7 @@ class designsconfigurations(Base):
     secondary_color = Column(String(50))
     cover_image_filename = Column(String(255))
     logo_filename = Column(String(255))
+    button_name = Column(String(255))
 
 
 Base.metadata.create_all(engine)
