@@ -45,35 +45,6 @@ class LoginForm:
         self.email = form.get('email')
         self.password = form.get('password')
 
-# Ruta de inicio de sesión (Log In):
-# @router.post("/login")
-# async def login(request: Request,
-#                 response: Response,
-#                 form_data: CustomOAuth2PasswordRequestForm,
-#                 db: Session = Depends(get_db)):
-#     try:
-#         form = LoginForm(request)
-#         await form.create_oauth_form()
-#         user = users_actions.authenticate_user(db=db,
-#                                             email=form_data.email,
-#                                             password=form_data.password)
-#         if user:
-#             user=user.as_dict()
-#             user = {
-#                 "name": user["name"],  # Puedes utilizar otro campo si tienes el nombre en la base de datos
-#                 "picture": f"assets/images/{user['picture']}.png",
-#                 "email": user["email"],
-#                 "user_id": user["id"]
-#             }
-#             token = create_jwt_token(user)
-#             return {"access_token": token, "token_type": "bearer", "messages": "Has ingresado exitosamente."}
-#         else: 
-#             return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
-#     except Exception as e:
-#         print(e)
-#         return JSONResponse(content={"error":"Correo electrónico o contraseña incorrectos, inténtelo de nuevo."}, status_code=401)
-
-# ======================================================================================================================
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
@@ -96,7 +67,6 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-# ======================================================================================================================
 
 @router.post("/logout")
 def logout(db: Session = Depends(get_db)):
@@ -186,6 +156,6 @@ async def validate_token(token: str = Header(None), db = Depends(get_db)):
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token no válido")
 
-@router.get("/reset_password")
-async def reset_password(auth = Depends(get_current_active_user)):
-    return {"message":"token validado"}
+@router.get("/desktop_test")
+def desktop_test(user: Annotated[str, Depends(get_current_active_user)]):
+    return "prueba de escritorio"
